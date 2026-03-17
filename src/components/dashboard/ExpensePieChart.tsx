@@ -49,7 +49,19 @@ const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
             {data.map((item, index) => (
               <Cell key={item.name} fill={BAR_COLORS[index % BAR_COLORS.length]} />
             ))}
-            <LabelList dataKey="percentage" position="right" formatter={(value: number) => `${value}%`} className="fill-foreground text-xs" />
+            <LabelList
+              position="right"
+              className="fill-foreground text-xs"
+              content={({ x, y, width, height, index }: any) => {
+                const item = data[index];
+                if (!item) return null;
+                return (
+                  <text x={Number(x) + Number(width) + 6} y={Number(y) + Number(height) / 2} dominantBaseline="central" className="fill-foreground text-xs" fontSize={12}>
+                    {`R$ ${item.value.toLocaleString("pt-BR")} (${item.percentage}%)`}
+                  </text>
+                );
+              }}
+            />
           </Bar>
         </BarChart>
       </ChartContainer>

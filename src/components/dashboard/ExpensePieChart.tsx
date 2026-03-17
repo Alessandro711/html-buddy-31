@@ -32,7 +32,7 @@ const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
     </CardHeader>
     <CardContent>
       <ChartContainer config={chartConfig} className="h-[380px] w-full">
-        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 36, left: 28, bottom: 0 }}>
+        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 120, left: 28, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
           <YAxis

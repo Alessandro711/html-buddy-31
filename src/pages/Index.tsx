@@ -147,19 +147,14 @@ const Index = () => {
           <KPICard title="Inadimplência" value={`${filteredKpis.inadimplencia}%`} variation={filteredKpis.inadimplenciaVariacao} icon={<AlertTriangle className="h-5 w-5" />} comparisonLabel="vs período anterior" />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-          <div className="xl:col-span-3">
-            <RevenueChart data={filteredRevenue} periodLabel={periodLabel} />
-          </div>
-          <div className="xl:col-span-2">
-            <ExpensePieChart data={filteredExpenseBreakdown} periodLabel={periodLabel} />
-          </div>
-        </div>
+        <RevenueChart data={filteredRevenue} periodLabel={periodLabel} />
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <ExpensePieChart data={filteredExpenseBreakdown} periodLabel={periodLabel} />
           <ServiceRevenueChart data={filteredServiceRevenue} periodLabel={periodLabel} />
-          <CashFlowChart data={filteredCashFlow} periodLabel={periodLabel} />
         </div>
+
+        <CashFlowChart data={filteredCashFlow} periodLabel={periodLabel} />
 
         <DRETable data={filteredDre} periodLabel={periodLabel} />
       </main>

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList } from "recharts";
 
 interface ServiceRevenueDatum {
   servico: string;
@@ -11,6 +11,14 @@ interface ServiceRevenueChartProps {
   data: ServiceRevenueDatum[];
   periodLabel: string;
 }
+
+const BAR_COLORS = [
+  "hsl(var(--chart-gold))",
+  "hsl(var(--chart-bronze))",
+  "hsl(var(--chart-gold-light))",
+  "hsl(var(--chart-dark))",
+  "hsl(var(--chart-cream))",
+];
 
 const chartConfig = {
   valor: { label: "Receita", color: "hsl(var(--chart-gold))" },
@@ -25,13 +33,36 @@ const ServiceRevenueChart = ({ data, periodLabel }: ServiceRevenueChartProps) =>
       </div>
     </CardHeader>
     <CardContent>
-      <ChartContainer config={chartConfig} className="h-[300px] w-full">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-          <XAxis dataKey="servico" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-          <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-          <ChartTooltip content={<ChartTooltipContent formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`} />} />
-          <Bar dataKey="valor" fill="var(--color-valor)" radius={[6, 6, 0, 0]} barSize={40} />
+      <ChartContainer config={chartConfig} className="h-[380px] w-full">
+        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 120, left: 28, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+          <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+          <YAxis
+            type="category"
+            dataKey="servico"
+            width={130}
+            tick={{ fontSize: 12 }}
+            stroke="hsl(var(--muted-foreground))"
+          />
+          <ChartTooltip content={<ChartTooltipContent formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`} labelFormatter={(label) => String(label)} />} />
+          <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
+            {data.map((item, index) => (
+              <Cell key={item.servico} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+            ))}
+            <LabelList
+              position="right"
+              className="fill-foreground text-xs"
+              content={({ x, y, width, height, index: idx }: any) => {
+                const item = data[idx];
+                if (!item) return null;
+                return (
+                  <text x={Number(x) + Number(width) + 6} y={Number(y) + Number(height) / 2} dominantBaseline="central" className="fill-foreground text-xs" fontSize={12}>
+                    {`R$ ${item.valor.toLocaleString("pt-BR")}`}
+                  </text>
+                );
+              }}
+            />
+          </Bar>
         </BarChart>
       </ChartContainer>
     </CardContent>

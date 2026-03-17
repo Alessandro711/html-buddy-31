@@ -1,7 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { expenseBreakdown } from "@/data/financialData";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
+
+interface ExpenseDatum {
+  name: string;
+  value: number;
+  percentage: number;
+}
+
+interface ExpensePieChartProps {
+  data: ExpenseDatum[];
+  periodLabel: string;
+}
 
 const BAR_COLORS = [
   "hsl(var(--chart-gold))",
@@ -17,14 +27,17 @@ const chartConfig = {
   value: { label: "Despesas", color: "hsl(var(--chart-gold))" },
 };
 
-const ExpensePieChart = () => (
+const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
   <Card className="border-none shadow-md">
     <CardHeader className="pb-2">
-      <CardTitle className="text-lg">Composição de Despesas</CardTitle>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-lg">Composição de Despesas</CardTitle>
+        <span className="text-xs text-muted-foreground">{periodLabel}</span>
+      </div>
     </CardHeader>
     <CardContent>
       <ChartContainer config={chartConfig} className="h-[320px] w-full">
-        <BarChart data={expenseBreakdown} layout="vertical" margin={{ top: 10, right: 24, left: 18, bottom: 0 }}>
+        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 24, left: 18, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
           <YAxis
@@ -38,7 +51,7 @@ const ExpensePieChart = () => (
             content={<ChartTooltipContent formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`} labelFormatter={(label) => String(label)} />}
           />
           <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-            {expenseBreakdown.map((item, index) => (
+            {data.map((item, index) => (
               <Cell key={item.name} fill={BAR_COLORS[index % BAR_COLORS.length]} />
             ))}
             <LabelList dataKey="percentage" position="right" formatter={(value: number) => `${value}%`} className="fill-foreground text-xs" />

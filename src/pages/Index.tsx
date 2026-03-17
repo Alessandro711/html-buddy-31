@@ -8,7 +8,7 @@ import ServiceRevenueChart from "@/components/dashboard/ServiceRevenueChart";
 import CashFlowChart from "@/components/dashboard/CashFlowChart";
 import DRETable from "@/components/dashboard/DRETable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { kpis, monthlyRevenue, cashFlowData } from "@/data/financialData";
+import { cashFlowData, getExpenseBreakdownByMonths, getRevenueByServiceByMonths, kpis, monthlyRevenue } from "@/data/financialData";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR");
 const allMonths = monthlyRevenue.map((item) => item.month);
@@ -28,6 +28,21 @@ const Index = () => {
   const filteredCashFlow = useMemo(
     () => cashFlowData.filter((_, index) => index >= startIndex && index <= endIndex),
     [startIndex, endIndex],
+  );
+
+  const filteredMonths = useMemo(
+    () => allMonths.filter((_, index) => index >= startIndex && index <= endIndex),
+    [startIndex, endIndex],
+  );
+
+  const filteredExpenseBreakdown = useMemo(
+    () => getExpenseBreakdownByMonths(filteredMonths),
+    [filteredMonths],
+  );
+
+  const filteredServiceRevenue = useMemo(
+    () => getRevenueByServiceByMonths(filteredMonths),
+    [filteredMonths],
   );
 
   const periodLabel = `${startMonth} — ${endMonth} de 2025`;
@@ -126,11 +141,11 @@ const Index = () => {
           <div className="lg:col-span-2">
             <RevenueChart data={filteredRevenue} periodLabel={periodLabel} />
           </div>
-          <ExpensePieChart />
+          <ExpensePieChart data={filteredExpenseBreakdown} periodLabel={periodLabel} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ServiceRevenueChart />
+          <ServiceRevenueChart data={filteredServiceRevenue} periodLabel={periodLabel} />
           <CashFlowChart data={filteredCashFlow} periodLabel={periodLabel} />
         </div>
 

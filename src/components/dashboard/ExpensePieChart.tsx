@@ -32,7 +32,7 @@ const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
     </CardHeader>
     <CardContent>
       <ChartContainer config={chartConfig} className="h-[380px] w-full">
-        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 36, left: 28, bottom: 0 }}>
+        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 120, left: 28, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
           <YAxis
@@ -49,7 +49,19 @@ const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
             {data.map((item, index) => (
               <Cell key={item.name} fill={BAR_COLORS[index % BAR_COLORS.length]} />
             ))}
-            <LabelList dataKey="percentage" position="right" formatter={(value: number) => `${value}%`} className="fill-foreground text-xs" />
+            <LabelList
+              position="right"
+              className="fill-foreground text-xs"
+              content={({ x, y, width, height, index }: any) => {
+                const item = data[index];
+                if (!item) return null;
+                return (
+                  <text x={Number(x) + Number(width) + 6} y={Number(y) + Number(height) / 2} dominantBaseline="central" className="fill-foreground text-xs" fontSize={12}>
+                    {`R$ ${item.value.toLocaleString("pt-BR")} (${item.percentage}%)`}
+                  </text>
+                );
+              }}
+            />
           </Bar>
         </BarChart>
       </ChartContainer>

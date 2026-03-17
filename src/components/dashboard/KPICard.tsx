@@ -8,22 +8,24 @@ interface KPICardProps {
   variation: number;
   icon: React.ReactNode;
   prefix?: string;
+  comparisonLabel?: string;
 }
 
-const KPICard = ({ title, value, variation, icon, prefix = "" }: KPICardProps) => {
+const KPICard = ({ title, value, variation, icon, prefix = "", comparisonLabel = "vs mês anterior" }: KPICardProps) => {
   const isPositive = variation >= 0;
 
   return (
-    <Card className="border-none shadow-md hover:shadow-lg transition-shadow duration-300 bg-card">
+    <Card className="border-none bg-card shadow-md transition-shadow duration-300 hover:shadow-lg">
       <CardContent className="p-5">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold text-foreground font-sans">
-              {prefix}{value}
+            <p className="font-sans text-2xl font-bold text-foreground">
+              {prefix}
+              {value}
             </p>
           </div>
-          <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+          <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
             {icon}
           </div>
         </div>
@@ -33,15 +35,11 @@ const KPICard = ({ title, value, variation, icon, prefix = "" }: KPICardProps) =
           ) : (
             <TrendingDown className="h-4 w-4 text-destructive" />
           )}
-          <span
-            className={cn(
-              "text-sm font-medium",
-              isPositive ? "text-[hsl(var(--success))]" : "text-destructive"
-            )}
-          >
-            {isPositive ? "+" : ""}{variation}%
+          <span className={cn("text-sm font-medium", isPositive ? "text-[hsl(var(--success))]" : "text-destructive")}>
+            {isPositive ? "+" : ""}
+            {variation}%
           </span>
-          <span className="text-xs text-muted-foreground">vs mês anterior</span>
+          <span className="text-xs text-muted-foreground">{comparisonLabel}</span>
         </div>
       </CardContent>
     </Card>

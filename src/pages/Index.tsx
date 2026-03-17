@@ -8,7 +8,7 @@ import ServiceRevenueChart from "@/components/dashboard/ServiceRevenueChart";
 import CashFlowChart from "@/components/dashboard/CashFlowChart";
 import DRETable from "@/components/dashboard/DRETable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cashFlowData, getExpenseBreakdownByMonths, getRevenueByServiceByMonths, kpis, monthlyRevenue } from "@/data/financialData";
+import { cashFlowData, getDreByMonths, getExpenseBreakdownByMonths, getKpisByMonths, getRevenueByServiceByMonths, monthlyRevenue } from "@/data/financialData";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR");
 const allMonths = monthlyRevenue.map((item) => item.month);
@@ -45,12 +45,22 @@ const Index = () => {
     [filteredMonths],
   );
 
+  const filteredKpis = useMemo(
+    () => getKpisByMonths(filteredMonths),
+    [filteredMonths],
+  );
+
+  const filteredDre = useMemo(
+    () => getDreByMonths(filteredMonths),
+    [filteredMonths],
+  );
+
   const periodLabel = `${startMonth} — ${endMonth} de 2025`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-full bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex w-full items-center justify-between px-4 py-3 sm:px-6 xl:px-10 2xl:px-12">
           <div className="flex items-center gap-3">
             <img src={logoClinica} alt="Logo Clínica Dra Greice Gama" className="h-12 w-auto" />
             <div>
@@ -65,7 +75,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <main className="w-full space-y-6 px-4 py-6 sm:px-6 xl:px-10 2xl:px-12">
         <section className="rounded-2xl border border-border bg-card p-4 shadow-md">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -128,28 +138,30 @@ const Index = () => {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <KPICard title="Faturamento" value={fmt(kpis.faturamentoMensal)} variation={kpis.faturamentoVariacao} icon={<DollarSign className="h-5 w-5" />} prefix="R$ " />
-          <KPICard title="Despesas" value={fmt(kpis.despesasMensal)} variation={kpis.despesasVariacao} icon={<TrendingDown className="h-5 w-5" />} prefix="R$ " />
-          <KPICard title="Lucro Líquido" value={fmt(kpis.lucroLiquido)} variation={kpis.lucroVariacao} icon={<TrendingUp className="h-5 w-5" />} prefix="R$ " />
-          <KPICard title="Margem de Lucro" value={`${kpis.margemLucro}%`} variation={kpis.margemVariacao} icon={<Percent className="h-5 w-5" />} />
-          <KPICard title="Ticket Médio" value={fmt(kpis.ticketMedio)} variation={kpis.ticketVariacao} icon={<Receipt className="h-5 w-5" />} prefix="R$ " />
-          <KPICard title="Inadimplência" value={`${kpis.inadimplencia}%`} variation={kpis.inadimplenciaVariacao} icon={<AlertTriangle className="h-5 w-5" />} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <KPICard title="Faturamento" value={fmt(filteredKpis.faturamentoMensal)} variation={filteredKpis.faturamentoVariacao} icon={<DollarSign className="h-5 w-5" />} prefix="R$ " comparisonLabel="vs período anterior" />
+          <KPICard title="Despesas" value={fmt(filteredKpis.despesasMensal)} variation={filteredKpis.despesasVariacao} icon={<TrendingDown className="h-5 w-5" />} prefix="R$ " comparisonLabel="vs período anterior" />
+          <KPICard title="Lucro Líquido" value={fmt(filteredKpis.lucroLiquido)} variation={filteredKpis.lucroVariacao} icon={<TrendingUp className="h-5 w-5" />} prefix="R$ " comparisonLabel="vs período anterior" />
+          <KPICard title="Margem de Lucro" value={`${filteredKpis.margemLucro}%`} variation={filteredKpis.margemVariacao} icon={<Percent className="h-5 w-5" />} comparisonLabel="vs período anterior" />
+          <KPICard title="Ticket Médio" value={fmt(filteredKpis.ticketMedio)} variation={filteredKpis.ticketVariacao} icon={<Receipt className="h-5 w-5" />} prefix="R$ " comparisonLabel="vs período anterior" />
+          <KPICard title="Inadimplência" value={`${filteredKpis.inadimplencia}%`} variation={filteredKpis.inadimplenciaVariacao} icon={<AlertTriangle className="h-5 w-5" />} comparisonLabel="vs período anterior" />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+          <div className="xl:col-span-3">
             <RevenueChart data={filteredRevenue} periodLabel={periodLabel} />
           </div>
-          <ExpensePieChart data={filteredExpenseBreakdown} periodLabel={periodLabel} />
+          <div className="xl:col-span-2">
+            <ExpensePieChart data={filteredExpenseBreakdown} periodLabel={periodLabel} />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <ServiceRevenueChart data={filteredServiceRevenue} periodLabel={periodLabel} />
           <CashFlowChart data={filteredCashFlow} periodLabel={periodLabel} />
         </div>
 
-        <DRETable />
+        <DRETable data={filteredDre} periodLabel={periodLabel} />
       </main>
     </div>
   );

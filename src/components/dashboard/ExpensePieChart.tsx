@@ -1,15 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import type { ExpenseBreakdownPoint } from "@/data/financialData";
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
 
-interface ExpenseDatum {
-  name: string;
-  value: number;
-  percentage: number;
-}
-
 interface ExpensePieChartProps {
-  data: ExpenseDatum[];
+  data: ExpenseBreakdownPoint[];
   periodLabel: string;
 }
 
@@ -36,14 +31,14 @@ const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
       </div>
     </CardHeader>
     <CardContent>
-      <ChartContainer config={chartConfig} className="h-[320px] w-full">
-        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 24, left: 18, bottom: 0 }}>
+      <ChartContainer config={chartConfig} className="h-[380px] w-full">
+        <BarChart data={data} layout="vertical" margin={{ top: 10, right: 36, left: 28, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
           <YAxis
             type="category"
             dataKey="name"
-            width={120}
+            width={170}
             tick={{ fontSize: 12 }}
             stroke="hsl(var(--muted-foreground))"
           />

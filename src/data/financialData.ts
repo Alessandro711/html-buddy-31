@@ -9,7 +9,77 @@ type ExpenseCategoryKey =
 
 type ServiceKey = "consultas" | "exames" | "procedimentos" | "retornos" | "outros";
 
-export const monthlyRevenue = [
+export interface RevenuePoint {
+  month: string;
+  faturamento: number;
+  despesas: number;
+  lucro: number;
+}
+
+export interface CashFlowPoint {
+  month: string;
+  entradas: number;
+  saidas: number;
+}
+
+export interface ExpenseBreakdownPoint {
+  name: string;
+  value: number;
+  percentage: number;
+}
+
+export interface ServiceRevenuePoint {
+  servico: string;
+  valor: number;
+}
+
+export interface KPIData {
+  faturamentoMensal: number;
+  faturamentoVariacao: number;
+  despesasMensal: number;
+  despesasVariacao: number;
+  lucroLiquido: number;
+  lucroVariacao: number;
+  margemLucro: number;
+  margemVariacao: number;
+  ticketMedio: number;
+  ticketVariacao: number;
+  inadimplencia: number;
+  inadimplenciaVariacao: number;
+}
+
+export interface DreData {
+  receitaBruta: number;
+  deducoes: {
+    impostos: number;
+    descontos: number;
+    total: number;
+  };
+  receitaLiquida: number;
+  custos: {
+    materiais: number;
+    pessoalAssistencial: number;
+    total: number;
+  };
+  lucroBruto: number;
+  despesasOperacionais: {
+    administrativas: number;
+    comerciais: number;
+    depreciacoes: number;
+    total: number;
+  };
+  resultadoOperacional: number;
+  resultadoFinanceiro: {
+    receitas: number;
+    despesas: number;
+    total: number;
+  };
+  resultadoAntesIR: number;
+  irCsll: number;
+  lucroLiquido: number;
+}
+
+export const monthlyRevenue: RevenuePoint[] = [
   { month: "Jan", faturamento: 185000, despesas: 112000, lucro: 73000 },
   { month: "Fev", faturamento: 198000, despesas: 118000, lucro: 80000 },
   { month: "Mar", faturamento: 210000, despesas: 125000, lucro: 85000 },
@@ -72,74 +142,192 @@ export const monthlyServiceRevenue = [
   { month: "Dez", consultas: 101000, exames: 61000, procedimentos: 60000, retornos: 36000, outros: 32000 },
 ];
 
+const monthlyOperationalMetrics = [
+  { month: "Jan", atendimentos: 480, inadimplencia: 4.8 },
+  { month: "Fev", atendimentos: 500, inadimplencia: 4.7 },
+  { month: "Mar", atendimentos: 520, inadimplencia: 4.5 },
+  { month: "Abr", atendimentos: 495, inadimplencia: 4.4 },
+  { month: "Mai", atendimentos: 545, inadimplencia: 4.3 },
+  { month: "Jun", atendimentos: 575, inadimplencia: 4.2 },
+  { month: "Jul", atendimentos: 560, inadimplencia: 4.1 },
+  { month: "Ago", atendimentos: 590, inadimplencia: 4.1 },
+  { month: "Set", atendimentos: 585, inadimplencia: 4.0 },
+  { month: "Out", atendimentos: 610, inadimplencia: 4.0 },
+  { month: "Nov", atendimentos: 640, inadimplencia: 3.9 },
+  { month: "Dez", atendimentos: 670, inadimplencia: 3.8 },
+];
+
+const allMonths = monthlyRevenue.map((item) => item.month);
+const expenseKeys = Object.keys(expenseLabels) as ExpenseCategoryKey[];
+const serviceKeys = Object.keys(serviceLabels) as ServiceKey[];
+
+const round1 = (value: number) => Math.round(value * 10) / 10;
+
+const comparePercent = (current: number, previous: number) => {
+  if (!previous) return 0;
+  return round1(((current - previous) / previous) * 100);
+};
+
+const getSelectedIndexes = (months: string[]) => {
+  const indexes = months.map((month) => allMonths.indexOf(month)).filter((index) => index >= 0);
+  const start = indexes.length ? Math.min(...indexes) : 0;
+  const end = indexes.length ? Math.max(...indexes) : allMonths.length - 1;
+  return { start, end };
+};
+
+const getPreviousWindowMonths = (months: string[]) => {
+  const { start, end } = getSelectedIndexes(months);
+  const windowSize = end - start + 1;
+  const previousStart = Math.max(0, start - windowSize);
+  const previousEnd = start - 1;
+
+  if (previousEnd < previousStart) return [] as string[];
+
+  return allMonths.slice(previousStart, previousEnd + 1);
+};
+
 const sumByKeys = <T extends string>(
   rows: Array<Record<T | "month", number | string>>,
-  keys: T[],
+  keys: readonly T[],
 ) => keys.reduce<Record<T, number>>((acc, key) => {
   acc[key] = rows.reduce((total, row) => total + Number(row[key] ?? 0), 0);
   return acc;
 }, {} as Record<T, number>);
 
-export const getExpenseBreakdownByMonths = (months: string[]) => {
-  const filtered = monthlyExpenseBreakdown.filter((item) => months.includes(item.month));
-  const keys = Object.keys(expenseLabels) as ExpenseCategoryKey[];
-  const totals = sumByKeys(filtered, keys);
+const filterByMonths = <T extends { month: string }>(rows: T[], months: string[]) => rows.filter((item) => months.includes(item.month));
+
+export const getExpenseBreakdownByMonths = (months: string[]): ExpenseBreakdownPoint[] => {
+  const filtered = filterByMonths(monthlyExpenseBreakdown, months);
+  const totals = sumByKeys(filtered, expenseKeys);
   const grandTotal = Object.values(totals).reduce((sum, value) => sum + value, 0);
 
-  return keys.map((key) => ({
+  return expenseKeys.map((key) => ({
     name: expenseLabels[key],
     value: totals[key],
     percentage: grandTotal > 0 ? Math.round((totals[key] / grandTotal) * 100) : 0,
   }));
 };
 
-export const getRevenueByServiceByMonths = (months: string[]) => {
-  const filtered = monthlyServiceRevenue.filter((item) => months.includes(item.month));
-  const keys = Object.keys(serviceLabels) as ServiceKey[];
-  const totals = sumByKeys(filtered, keys);
+export const getRevenueByServiceByMonths = (months: string[]): ServiceRevenuePoint[] => {
+  const filtered = filterByMonths(monthlyServiceRevenue, months);
+  const totals = sumByKeys(filtered, serviceKeys);
 
-  return keys.map((key) => ({
+  return serviceKeys.map((key) => ({
     servico: serviceLabels[key],
     valor: totals[key],
   }));
 };
 
-export const expenseBreakdown = getExpenseBreakdownByMonths(monthlyRevenue.map((item) => item.month));
+export const getKpisByMonths = (months: string[]): KPIData => {
+  const filteredRevenue = filterByMonths(monthlyRevenue, months);
+  const filteredOperational = filterByMonths(monthlyOperationalMetrics, months);
+  const previousMonths = getPreviousWindowMonths(months);
+  const previousRevenue = filterByMonths(monthlyRevenue, previousMonths);
+  const previousOperational = filterByMonths(monthlyOperationalMetrics, previousMonths);
 
-export const revenueByService = getRevenueByServiceByMonths(monthlyRevenue.map((item) => item.month));
+  const faturamentoMensal = filteredRevenue.reduce((sum, item) => sum + item.faturamento, 0);
+  const despesasMensal = filteredRevenue.reduce((sum, item) => sum + item.despesas, 0);
+  const lucroLiquido = filteredRevenue.reduce((sum, item) => sum + item.lucro, 0);
+  const margemLucro = faturamentoMensal > 0 ? round1((lucroLiquido / faturamentoMensal) * 100) : 0;
 
-export const dreData = {
-  receitaBruta: 2805000,
-  deducoes: {
-    impostos: 280500,
-    descontos: 56100,
-    total: 336600,
-  },
-  receitaLiquida: 2468400,
-  custos: {
-    materiais: 245000,
-    pessoalAssistencial: 420000,
-    total: 665000,
-  },
-  lucroBruto: 1803400,
-  despesasOperacionais: {
-    administrativas: 380000,
-    comerciais: 95000,
-    depreciacoes: 72000,
-    total: 547000,
-  },
-  resultadoOperacional: 1256400,
-  resultadoFinanceiro: {
-    receitas: 45000,
-    despesas: 68000,
-    total: -23000,
-  },
-  resultadoAntesIR: 1233400,
-  irCsll: 296016,
-  lucroLiquido: 937384,
+  const atendimentos = filteredOperational.reduce((sum, item) => sum + item.atendimentos, 0);
+  const ticketMedio = atendimentos > 0 ? Math.round(faturamentoMensal / atendimentos) : 0;
+  const inadimplencia = filteredOperational.length > 0
+    ? round1(filteredOperational.reduce((sum, item) => sum + item.inadimplencia, 0) / filteredOperational.length)
+    : 0;
+
+  const prevFaturamento = previousRevenue.reduce((sum, item) => sum + item.faturamento, 0);
+  const prevDespesas = previousRevenue.reduce((sum, item) => sum + item.despesas, 0);
+  const prevLucro = previousRevenue.reduce((sum, item) => sum + item.lucro, 0);
+  const prevMargem = prevFaturamento > 0 ? (prevLucro / prevFaturamento) * 100 : 0;
+  const prevAtendimentos = previousOperational.reduce((sum, item) => sum + item.atendimentos, 0);
+  const prevTicket = prevAtendimentos > 0 ? prevFaturamento / prevAtendimentos : 0;
+  const prevInadimplencia = previousOperational.length > 0
+    ? previousOperational.reduce((sum, item) => sum + item.inadimplencia, 0) / previousOperational.length
+    : 0;
+
+  return {
+    faturamentoMensal,
+    faturamentoVariacao: comparePercent(faturamentoMensal, prevFaturamento),
+    despesasMensal,
+    despesasVariacao: comparePercent(despesasMensal, prevDespesas),
+    lucroLiquido,
+    lucroVariacao: comparePercent(lucroLiquido, prevLucro),
+    margemLucro,
+    margemVariacao: round1(margemLucro - prevMargem),
+    ticketMedio,
+    ticketVariacao: comparePercent(ticketMedio, prevTicket),
+    inadimplencia,
+    inadimplenciaVariacao: round1(inadimplencia - prevInadimplencia),
+  };
 };
 
-export const cashFlowData = [
+export const getDreByMonths = (months: string[]): DreData => {
+  const filteredRevenue = filterByMonths(monthlyRevenue, months);
+  const filteredExpenses = filterByMonths(monthlyExpenseBreakdown, months);
+  const expenseTotals = sumByKeys(filteredExpenses, expenseKeys);
+
+  const receitaBruta = filteredRevenue.reduce((sum, item) => sum + item.faturamento, 0);
+  const impostos = expenseTotals.impostos;
+  const descontos = Math.round(receitaBruta * 0.02);
+  const receitaLiquida = receitaBruta - impostos - descontos;
+
+  const materiais = expenseTotals.materiaisInsumos;
+  const pessoalAssistencial = Math.round(expenseTotals.folhaPagamento * 0.55);
+  const custosTotal = materiais + pessoalAssistencial;
+  const lucroBruto = receitaLiquida - custosTotal;
+
+  const administrativas = Math.round(expenseTotals.folhaPagamento * 0.45) + expenseTotals.aluguelCondominio + expenseTotals.outros;
+  const comerciais = expenseTotals.marketing;
+  const depreciacoes = expenseTotals.equipamentos;
+  const despesasOperacionaisTotal = administrativas + comerciais + depreciacoes;
+  const resultadoOperacional = lucroBruto - despesasOperacionaisTotal;
+
+  const receitasFinanceiras = Math.round(receitaBruta * 0.015);
+  const despesasFinanceiras = Math.round(receitaBruta * 0.022);
+  const resultadoFinanceiroTotal = receitasFinanceiras - despesasFinanceiras;
+  const resultadoAntesIR = resultadoOperacional + resultadoFinanceiroTotal;
+  const irCsll = resultadoAntesIR > 0 ? Math.round(resultadoAntesIR * 0.24) : 0;
+  const lucroLiquido = resultadoAntesIR - irCsll;
+
+  return {
+    receitaBruta,
+    deducoes: {
+      impostos,
+      descontos,
+      total: impostos + descontos,
+    },
+    receitaLiquida,
+    custos: {
+      materiais,
+      pessoalAssistencial,
+      total: custosTotal,
+    },
+    lucroBruto,
+    despesasOperacionais: {
+      administrativas,
+      comerciais,
+      depreciacoes,
+      total: despesasOperacionaisTotal,
+    },
+    resultadoOperacional,
+    resultadoFinanceiro: {
+      receitas: receitasFinanceiras,
+      despesas: despesasFinanceiras,
+      total: resultadoFinanceiroTotal,
+    },
+    resultadoAntesIR,
+    irCsll,
+    lucroLiquido,
+  };
+};
+
+export const expenseBreakdown = getExpenseBreakdownByMonths(allMonths);
+export const revenueByService = getRevenueByServiceByMonths(allMonths);
+export const kpis = getKpisByMonths(allMonths);
+export const dreData = getDreByMonths(allMonths);
+
+export const cashFlowData: CashFlowPoint[] = [
   { month: "Jan", entradas: 195000, saidas: 145000 },
   { month: "Fev", entradas: 208000, saidas: 152000 },
   { month: "Mar", entradas: 220000, saidas: 160000 },
@@ -153,18 +341,3 @@ export const cashFlowData = [
   { month: "Nov", entradas: 285000, saidas: 185000 },
   { month: "Dez", entradas: 300000, saidas: 192000 },
 ];
-
-export const kpis = {
-  faturamentoMensal: 290000,
-  faturamentoVariacao: 5.5,
-  despesasMensal: 155000,
-  despesasVariacao: 4.7,
-  lucroLiquido: 135000,
-  lucroVariacao: 6.3,
-  margemLucro: 46.6,
-  margemVariacao: 0.8,
-  ticketMedio: 385,
-  ticketVariacao: 3.2,
-  inadimplencia: 4.2,
-  inadimplenciaVariacao: -0.5,
-};

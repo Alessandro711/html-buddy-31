@@ -7,52 +7,67 @@ import ExpensePieChart from "@/components/dashboard/ExpensePieChart";
 import ServiceRevenueChart from "@/components/dashboard/ServiceRevenueChart";
 import CashFlowChart from "@/components/dashboard/CashFlowChart";
 import DRETable from "@/components/dashboard/DRETable";
+import ExcelImport from "@/components/dashboard/ExcelImport";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cashFlowData, getDreByMonths, getExpenseBreakdownByMonths, getKpisByMonths, getRevenueByServiceByMonths, monthlyRevenue } from "@/data/financialData";
+import { getExpenseBreakdownFromData, getRevenueByServiceFromData, getKpisFromData, getDreFromData } from "@/data/financialData";
+import { useFinancialData } from "@/hooks/useFinancialData";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR");
-const allMonths = monthlyRevenue.map((item) => item.month);
+const ALL_MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const Index = () => {
-  const [startMonth, setStartMonth] = useState(allMonths[0]);
-  const [endMonth, setEndMonth] = useState(allMonths[allMonths.length - 1]);
+  const { revenue, expenses, services, cashFlow, operational, loading, refetch } = useFinancialData();
 
-  const startIndex = allMonths.indexOf(startMonth);
-  const endIndex = allMonths.indexOf(endMonth);
+  const availableMonths = useMemo(() => {
+    const months = revenue.map((r) => r.month);
+    return ALL_MONTHS.filter((m) => months.includes(m));
+  }, [revenue]);
+
+  const [startMonth, setStartMonth] = useState(ALL_MONTHS[0]);
+  const [endMonth, setEndMonth] = useState(ALL_MONTHS[ALL_MONTHS.length - 1]);
+
+  const startIndex = ALL_MONTHS.indexOf(startMonth);
+  const endIndex = ALL_MONTHS.indexOf(endMonth);
 
   const filteredRevenue = useMemo(
-    () => monthlyRevenue.filter((_, index) => index >= startIndex && index <= endIndex),
-    [startIndex, endIndex],
+    () => revenue.filter((item) => {
+      const idx = ALL_MONTHS.indexOf(item.month);
+      return idx >= startIndex && idx <= endIndex;
+    }),
+    [revenue, startIndex, endIndex],
   );
 
   const filteredCashFlow = useMemo(
-    () => cashFlowData.filter((_, index) => index >= startIndex && index <= endIndex),
-    [startIndex, endIndex],
+    () => cashFlow.filter((item) => {
+      const idx = ALL_MONTHS.indexOf(item.month);
+      return idx >= startIndex && idx <= endIndex;
+    }),
+    [cashFlow, startIndex, endIndex],
   );
 
   const filteredMonths = useMemo(
-    () => allMonths.filter((_, index) => index >= startIndex && index <= endIndex),
+    () => ALL_MONTHS.filter((_, index) => index >= startIndex && index <= endIndex),
     [startIndex, endIndex],
   );
 
   const filteredExpenseBreakdown = useMemo(
-    () => getExpenseBreakdownByMonths(filteredMonths),
-    [filteredMonths],
+    () => getExpenseBreakdownFromData(expenses, filteredMonths),
+    [expenses, filteredMonths],
   );
 
   const filteredServiceRevenue = useMemo(
-    () => getRevenueByServiceByMonths(filteredMonths),
-    [filteredMonths],
+    () => getRevenueByServiceFromData(services, filteredMonths),
+    [services, filteredMonths],
   );
 
   const filteredKpis = useMemo(
-    () => getKpisByMonths(filteredMonths),
-    [filteredMonths],
+    () => getKpisFromData(revenue, expenses, operational, filteredMonths),
+    [revenue, expenses, operational, filteredMonths],
   );
 
   const filteredDre = useMemo(
-    () => getDreByMonths(filteredMonths),
-    [filteredMonths],
+    () => getDreFromData(revenue, expenses, filteredMonths),
+    [revenue, expenses, filteredMonths],
   );
 
   const periodLabel = `${startMonth} — ${endMonth} de 2025`;
@@ -68,9 +83,12 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Clínica Médica Dra Greice Gama</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-foreground">{periodLabel}</p>
-            <p className="text-xs text-muted-foreground">Atualizado em tempo real</p>
+          <div className="flex items-center gap-4">
+            <ExcelImport onImportComplete={refetch} />
+            <div className="text-right">
+              <p className="text-sm font-medium text-foreground">{periodLabel}</p>
+              <p className="text-xs text-muted-foreground">Atualizado em tempo real</p>
+            </div>
           </div>
         </div>
       </header>
@@ -91,21 +109,15 @@ const Index = () => {
                 <Select
                   value={startMonth}
                   onValueChange={(value) => {
-                    const nextStartIndex = allMonths.indexOf(value);
+                    const nextStartIndex = ALL_MONTHS.indexOf(value);
                     setStartMonth(value);
-                    if (nextStartIndex > endIndex) {
-                      setEndMonth(value);
-                    }
+                    if (nextStartIndex > endIndex) setEndMonth(value);
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Mês inicial" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Mês inicial" /></SelectTrigger>
                   <SelectContent>
-                    {allMonths.map((month) => (
-                      <SelectItem key={month} value={month}>
-                        {month}
-                      </SelectItem>
+                    {ALL_MONTHS.map((month) => (
+                      <SelectItem key={month} value={month}>{month}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -115,21 +127,15 @@ const Index = () => {
                 <Select
                   value={endMonth}
                   onValueChange={(value) => {
-                    const nextEndIndex = allMonths.indexOf(value);
+                    const nextEndIndex = ALL_MONTHS.indexOf(value);
                     setEndMonth(value);
-                    if (nextEndIndex < startIndex) {
-                      setStartMonth(value);
-                    }
+                    if (nextEndIndex < startIndex) setStartMonth(value);
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Mês final" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Mês final" /></SelectTrigger>
                   <SelectContent>
-                    {allMonths.map((month) => (
-                      <SelectItem key={month} value={month}>
-                        {month}
-                      </SelectItem>
+                    {ALL_MONTHS.map((month) => (
+                      <SelectItem key={month} value={month}>{month}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

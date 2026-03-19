@@ -14,7 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cash_flow: {
+        Row: {
+          created_at: string
+          entradas: number
+          id: string
+          month: string
+          saidas: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entradas?: number
+          id?: string
+          month: string
+          saidas?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entradas?: number
+          id?: string
+          month?: string
+          saidas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_expenses: {
+        Row: {
+          aluguel_condominio: number
+          created_at: string
+          equipamentos: number
+          folha_pagamento: number
+          id: string
+          impostos: number
+          marketing: number
+          materiais_insumos: number
+          month: string
+          outros: number
+          updated_at: string
+        }
+        Insert: {
+          aluguel_condominio?: number
+          created_at?: string
+          equipamentos?: number
+          folha_pagamento?: number
+          id?: string
+          impostos?: number
+          marketing?: number
+          materiais_insumos?: number
+          month: string
+          outros?: number
+          updated_at?: string
+        }
+        Update: {
+          aluguel_condominio?: number
+          created_at?: string
+          equipamentos?: number
+          folha_pagamento?: number
+          id?: string
+          impostos?: number
+          marketing?: number
+          materiais_insumos?: number
+          month?: string
+          outros?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_operational: {
+        Row: {
+          atendimentos: number
+          created_at: string
+          id: string
+          inadimplencia: number
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          atendimentos?: number
+          created_at?: string
+          id?: string
+          inadimplencia?: number
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          atendimentos?: number
+          created_at?: string
+          id?: string
+          inadimplencia?: number
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_revenue: {
+        Row: {
+          created_at: string
+          despesas: number
+          faturamento: number
+          id: string
+          lucro: number
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          despesas?: number
+          faturamento?: number
+          id?: string
+          lucro?: number
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          despesas?: number
+          faturamento?: number
+          id?: string
+          lucro?: number
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_service_revenue: {
+        Row: {
+          consultas: number
+          created_at: string
+          exames: number
+          id: string
+          month: string
+          outros: number
+          procedimentos: number
+          retornos: number
+          updated_at: string
+        }
+        Insert: {
+          consultas?: number
+          created_at?: string
+          exames?: number
+          id?: string
+          month: string
+          outros?: number
+          procedimentos?: number
+          retornos?: number
+          updated_at?: string
+        }
+        Update: {
+          consultas?: number
+          created_at?: string
+          exames?: number
+          id?: string
+          month?: string
+          outros?: number
+          procedimentos?: number
+          retornos?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

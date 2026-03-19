@@ -341,3 +341,123 @@ export const cashFlowData: CashFlowPoint[] = [
   { month: "Nov", entradas: 285000, saidas: 185000 },
   { month: "Dez", entradas: 300000, saidas: 192000 },
 ];
+
+// === Dynamic versions that accept data as parameters ===
+
+type ExpenseRow = { month: string; folhaPagamento: number; materiaisInsumos: number; aluguelCondominio: number; equipamentos: number; marketing: number; impostos: number; outros: number };
+type ServiceRow = { month: string; consultas: number; exames: number; procedimentos: number; retornos: number; outros: number };
+type OperationalRow = { month: string; atendimentos: number; inadimplencia: number };
+
+const ALL_MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+const getPrevWindow = (months: string[]) => {
+  const indexes = months.map((m) => ALL_MONTHS.indexOf(m)).filter((i) => i >= 0);
+  if (!indexes.length) return [];
+  const start = Math.min(...indexes);
+  const end = Math.max(...indexes);
+  const size = end - start + 1;
+  const pStart = Math.max(0, start - size);
+  const pEnd = start - 1;
+  if (pEnd < pStart) return [];
+  return ALL_MONTHS.slice(pStart, pEnd + 1);
+};
+
+export const getExpenseBreakdownFromData = (data: ExpenseRow[], months: string[]): ExpenseBreakdownPoint[] => {
+  const filtered = data.filter((r) => months.includes(r.month));
+  const totals = sumByKeys(filtered, expenseKeys);
+  const grandTotal = Object.values(totals).reduce((s, v) => s + v, 0);
+  return expenseKeys.map((key) => ({
+    name: expenseLabels[key],
+    value: totals[key],
+    percentage: grandTotal > 0 ? Math.round((totals[key] / grandTotal) * 100) : 0,
+  }));
+};
+
+export const getRevenueByServiceFromData = (data: ServiceRow[], months: string[]): ServiceRevenuePoint[] => {
+  const filtered = data.filter((r) => months.includes(r.month));
+  const totals = sumByKeys(filtered, serviceKeys);
+  return serviceKeys.map((key) => ({ servico: serviceLabels[key], valor: totals[key] }));
+};
+
+export const getKpisFromData = (
+  revenueData: RevenuePoint[],
+  expenseData: ExpenseRow[],
+  operationalData: OperationalRow[],
+  months: string[],
+): KPIData => {
+  const fRev = revenueData.filter((r) => months.includes(r.month));
+  const fOps = operationalData.filter((r) => months.includes(r.month));
+  const prev = getPrevWindow(months);
+  const pRev = revenueData.filter((r) => prev.includes(r.month));
+  const pOps = operationalData.filter((r) => prev.includes(r.month));
+
+  const fat = fRev.reduce((s, i) => s + i.faturamento, 0);
+  const desp = fRev.reduce((s, i) => s + i.despesas, 0);
+  const lucro = fRev.reduce((s, i) => s + i.lucro, 0);
+  const margem = fat > 0 ? round1((lucro / fat) * 100) : 0;
+  const atend = fOps.reduce((s, i) => s + i.atendimentos, 0);
+  const ticket = atend > 0 ? Math.round(fat / atend) : 0;
+  const inad = fOps.length > 0 ? round1(fOps.reduce((s, i) => s + i.inadimplencia, 0) / fOps.length) : 0;
+
+  const pFat = pRev.reduce((s, i) => s + i.faturamento, 0);
+  const pLucro = pRev.reduce((s, i) => s + i.lucro, 0);
+  const pDesp = pRev.reduce((s, i) => s + i.despesas, 0);
+  const pMargem = pFat > 0 ? (pLucro / pFat) * 100 : 0;
+  const pAtend = pOps.reduce((s, i) => s + i.atendimentos, 0);
+  const pTicket = pAtend > 0 ? pFat / pAtend : 0;
+  const pInad = pOps.length > 0 ? pOps.reduce((s, i) => s + i.inadimplencia, 0) / pOps.length : 0;
+
+  return {
+    faturamentoMensal: fat,
+    faturamentoVariacao: comparePercent(fat, pFat),
+    despesasMensal: desp,
+    despesasVariacao: comparePercent(desp, pDesp),
+    lucroLiquido: lucro,
+    lucroVariacao: comparePercent(lucro, pLucro),
+    margemLucro: margem,
+    margemVariacao: round1(margem - pMargem),
+    ticketMedio: ticket,
+    ticketVariacao: comparePercent(ticket, pTicket),
+    inadimplencia: inad,
+    inadimplenciaVariacao: round1(inad - pInad),
+  };
+};
+
+export const getDreFromData = (revenueData: RevenuePoint[], expenseData: ExpenseRow[], months: string[]): DreData => {
+  const fRev = revenueData.filter((r) => months.includes(r.month));
+  const fExp = expenseData.filter((r) => months.includes(r.month));
+  const et = sumByKeys(fExp, expenseKeys);
+
+  const receitaBruta = fRev.reduce((s, i) => s + i.faturamento, 0);
+  const impostos = et.impostos;
+  const descontos = Math.round(receitaBruta * 0.02);
+  const receitaLiquida = receitaBruta - impostos - descontos;
+  const materiais = et.materiaisInsumos;
+  const pessoalAssistencial = Math.round(et.folhaPagamento * 0.55);
+  const custosTotal = materiais + pessoalAssistencial;
+  const lucroBruto = receitaLiquida - custosTotal;
+  const administrativas = Math.round(et.folhaPagamento * 0.45) + et.aluguelCondominio + et.outros;
+  const comerciais = et.marketing;
+  const depreciacoes = et.equipamentos;
+  const despOp = administrativas + comerciais + depreciacoes;
+  const resOp = lucroBruto - despOp;
+  const recFin = Math.round(receitaBruta * 0.015);
+  const despFin = Math.round(receitaBruta * 0.022);
+  const resFin = recFin - despFin;
+  const resAntesIR = resOp + resFin;
+  const ir = resAntesIR > 0 ? Math.round(resAntesIR * 0.24) : 0;
+
+  return {
+    receitaBruta,
+    deducoes: { impostos, descontos, total: impostos + descontos },
+    receitaLiquida,
+    custos: { materiais, pessoalAssistencial, total: custosTotal },
+    lucroBruto,
+    despesasOperacionais: { administrativas, comerciais, depreciacoes, total: despOp },
+    resultadoOperacional: resOp,
+    resultadoFinanceiro: { receitas: recFin, despesas: despFin, total: resFin },
+    resultadoAntesIR: resAntesIR,
+    irCsll: ir,
+    lucroLiquido: resAntesIR - ir,
+  };
+};

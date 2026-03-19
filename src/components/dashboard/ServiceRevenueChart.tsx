@@ -39,10 +39,7 @@ const ServiceRevenueChart = ({ data, periodLabel }: ServiceRevenueChartProps) =>
             stroke="hsl(var(--muted-foreground))"
           />
           <ChartTooltip content={<ChartTooltipContent formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`} labelFormatter={(label) => String(label)} />} />
-          <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
-            {data.map((item, index) => (
-              <Cell key={item.servico} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-            ))}
+          <Bar dataKey="valor" radius={[0, 6, 6, 0]} fill={BAR_COLOR}>
             <LabelList
               position="right"
               className="fill-foreground text-xs"

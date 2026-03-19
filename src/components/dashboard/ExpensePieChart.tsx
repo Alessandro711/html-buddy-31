@@ -37,10 +37,7 @@ const ExpensePieChart = ({ data, periodLabel }: ExpensePieChartProps) => (
           <ChartTooltip
             content={<ChartTooltipContent formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`} labelFormatter={(label) => String(label)} />}
           />
-          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-            {data.map((item, index) => (
-              <Cell key={item.name} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-            ))}
+          <Bar dataKey="value" radius={[0, 6, 6, 0]} fill={BAR_COLOR}>
             <LabelList
               position="right"
               className="fill-foreground text-xs"

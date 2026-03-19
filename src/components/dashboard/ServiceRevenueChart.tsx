@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList } from "recharts";
 
 interface ServiceRevenueDatum {
   servico: string;
@@ -12,13 +12,7 @@ interface ServiceRevenueChartProps {
   periodLabel: string;
 }
 
-const BAR_COLORS = [
-  "hsl(var(--chart-gold))",
-  "hsl(var(--chart-bronze))",
-  "hsl(var(--chart-gold-light))",
-  "hsl(var(--chart-dark))",
-  "hsl(var(--chart-cream))",
-];
+const BAR_COLOR = "hsl(var(--chart-gold))";
 
 const chartConfig = {
   valor: { label: "Receita", color: "hsl(var(--chart-gold))" },
@@ -45,10 +39,7 @@ const ServiceRevenueChart = ({ data, periodLabel }: ServiceRevenueChartProps) =>
             stroke="hsl(var(--muted-foreground))"
           />
           <ChartTooltip content={<ChartTooltipContent formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`} labelFormatter={(label) => String(label)} />} />
-          <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
-            {data.map((item, index) => (
-              <Cell key={item.servico} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-            ))}
+          <Bar dataKey="valor" radius={[0, 6, 6, 0]} fill={BAR_COLOR}>
             <LabelList
               position="right"
               className="fill-foreground text-xs"

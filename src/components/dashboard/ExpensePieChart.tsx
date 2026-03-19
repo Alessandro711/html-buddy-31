@@ -8,15 +8,7 @@ interface ExpensePieChartProps {
   periodLabel: string;
 }
 
-const BAR_COLORS = [
-  "hsl(var(--chart-gold))",
-  "hsl(var(--chart-bronze))",
-  "hsl(var(--chart-gold-light))",
-  "hsl(var(--chart-dark))",
-  "hsl(var(--chart-cream))",
-  "hsl(var(--chart-gold))",
-  "hsl(var(--chart-bronze))",
-];
+const BAR_COLOR = "hsl(var(--chart-gold))";
 
 const chartConfig = {
   value: { label: "Despesas", color: "hsl(var(--chart-gold))" },

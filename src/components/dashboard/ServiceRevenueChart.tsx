@@ -12,13 +12,7 @@ interface ServiceRevenueChartProps {
   periodLabel: string;
 }
 
-const BAR_COLORS = [
-  "hsl(var(--chart-gold))",
-  "hsl(var(--chart-bronze))",
-  "hsl(var(--chart-gold-light))",
-  "hsl(var(--chart-dark))",
-  "hsl(var(--chart-cream))",
-];
+const BAR_COLOR = "hsl(var(--chart-gold))";
 
 const chartConfig = {
   valor: { label: "Receita", color: "hsl(var(--chart-gold))" },

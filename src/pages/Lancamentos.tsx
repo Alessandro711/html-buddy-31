@@ -307,7 +307,7 @@ export default function Lancamentos() {
         const iDescL  = headers.findIndex(h => h.includes("desc. conta") || h.includes("desc.conta"));
         const iProf   = headers.findIndex(h => h.includes("profissional"));
         const iConv   = headers.findIndex(h => h.includes("convênio") || h.includes("convenio"));
-        const iProntL = headers.findIndex(h => h.includes("prontuário") || h.includes("prontuario") || h === "prontuário");
+        // iProntL kept for compatibility but not used for dedup
 
         if (iData === -1 || iTipo === -1 || iHonorL === -1)
           throw new Error("Colunas obrigatórias não encontradas (Data, Tipo, Honor($)).");

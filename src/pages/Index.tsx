@@ -31,41 +31,47 @@ const parseDate = (s: string) => {
 };
 
 
-// ── DateRangeFilter ──────────────────────────────────────────────────────────
-function DateRangeFilter({
-  startDate, endDate, minDate, maxDate, onStartChange, onEndChange,
-}: {
-  startDate: string; endDate: string;
-  minDate: string;   maxDate: string;
-  onStartChange: (d: string) => void;
-  onEndChange:   (d: string) => void;
+// ── MonthYearFilter ──────────────────────────────────────────────────────────
+function MonthYearSelector({ label, month, year, months, years, onMonthChange, onYearChange }: {
+  label: string; month: number; year: number;
+  months: typeof ALL_MONTHS; years: number[];
+  onMonthChange: (m: number) => void; onYearChange: (y: number) => void;
 }) {
-  const inputCls = [
-    "h-9 w-36 rounded-xl border border-border bg-card px-3 text-sm text-foreground",
+  const selectCls = [
+    "h-9 rounded-xl border border-border bg-card px-2 text-sm text-foreground",
     "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
-    "hover:border-primary/50 transition-all [color-scheme:light] cursor-pointer",
+    "hover:border-primary/50 transition-all cursor-pointer appearance-none",
   ].join(" ");
 
   return (
-    <div className="flex items-center gap-2 bg-muted/40 rounded-2xl px-3 py-1.5 border border-border/60">
-      <span className="text-xs text-muted-foreground font-medium select-none whitespace-nowrap">De</span>
-      <input
-        type="date"
-        value={startDate}
-        min={minDate || undefined}
-        max={endDate  || undefined}
-        onChange={e => { if (e.target.value) onStartChange(e.target.value); }}
-        className={inputCls}
-      />
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground font-medium select-none whitespace-nowrap">{label}</span>
+      <select value={month} onChange={e => onMonthChange(Number(e.target.value))} className={selectCls}>
+        {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+      </select>
+      <select value={year} onChange={e => onYearChange(Number(e.target.value))} className={selectCls}>
+        {years.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function DateRangeFilter({
+  startMonth, startYear, endMonth, endYear, years,
+  onStartMonthChange, onStartYearChange, onEndMonthChange, onEndYearChange,
+}: {
+  startMonth: number; startYear: number; endMonth: number; endYear: number;
+  years: number[];
+  onStartMonthChange: (m: number) => void; onStartYearChange: (y: number) => void;
+  onEndMonthChange: (m: number) => void; onEndYearChange: (y: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-muted/40 rounded-2xl px-3 py-1.5 border border-border/60 flex-wrap">
+      <MonthYearSelector label="De" month={startMonth} year={startYear} months={ALL_MONTHS} years={years}
+        onMonthChange={onStartMonthChange} onYearChange={onStartYearChange} />
       <span className="text-muted-foreground select-none">→</span>
-      <input
-        type="date"
-        value={endDate}
-        min={startDate || undefined}
-        max={maxDate   || undefined}
-        onChange={e => { if (e.target.value) onEndChange(e.target.value); }}
-        className={inputCls}
-      />
+      <MonthYearSelector label="Até" month={endMonth} year={endYear} months={ALL_MONTHS} years={years}
+        onMonthChange={onEndMonthChange} onYearChange={onEndYearChange} />
     </div>
   );
 }
@@ -89,20 +95,31 @@ const Index = () => {
     });
   }, [refetch]);
 
-  // ── Date range filter (stored as ISO date strings) ────────────────────────
-  const [startDate, setStartDate] = useState(`${CURRENT_YEAR}-01-01`);
-  const [endDate,   setEndDate]   = useState(`${CURRENT_YEAR}-12-31`);
+  // ── Month/Year filter state ────────────────────────────────────────────────
+  const [startMonthIdx, setStartMonthIdx] = useState(0);
+  const [startYear, setStartYear]         = useState(CURRENT_YEAR);
+  const [endMonthIdx, setEndMonthIdx]     = useState(11);
+  const [endYear, setEndYear]             = useState(CURRENT_YEAR);
+
+  // Available years for selector
+  const availableYears = useMemo(() => {
+    const minY = dateBounds.minDate ? parseInt(dateBounds.minDate.split("-")[0]) : CURRENT_YEAR;
+    const maxY = dateBounds.maxDate ? parseInt(dateBounds.maxDate.split("-")[0]) : CURRENT_YEAR;
+    const years: number[] = [];
+    for (let y = minY; y <= maxY; y++) years.push(y);
+    if (years.length === 0) years.push(CURRENT_YEAR);
+    return years;
+  }, [dateBounds.minDate, dateBounds.maxDate]);
 
   // Auto-set filter to min/max dates in DB once loaded
   useEffect(() => {
     if (dateBounds.minDate && dateBounds.maxDate) {
-      setStartDate(dateBounds.minDate);
-      setEndDate(dateBounds.maxDate);
+      const { year: minY, monthIdx: minM } = parseDate(dateBounds.minDate);
+      const { year: maxY, monthIdx: maxM } = parseDate(dateBounds.maxDate);
+      setStartYear(minY); setStartMonthIdx(minM);
+      setEndYear(maxY);   setEndMonthIdx(maxM);
     }
   }, [dateBounds.minDate, dateBounds.maxDate]);
-
-  const { year: startYear, monthIdx: startMonthIdx } = parseDate(startDate);
-  const { year: endYear,   monthIdx: endMonthIdx   } = parseDate(endDate);
 
   // filteredMonthKeys: "YYYY-Mon" strings covering the full selected date range
   const filteredMonthKeys = useMemo(() => {
@@ -230,12 +247,13 @@ const Index = () => {
 
           {/* Filtro de período */}
           <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            minDate={dateBounds.minDate}
-            maxDate={dateBounds.maxDate}
-            onStartChange={val => { setStartDate(val); if (val > endDate) setEndDate(val); }}
-            onEndChange={val => { setEndDate(val); if (val < startDate) setStartDate(val); }}
+            startMonth={startMonthIdx} startYear={startYear}
+            endMonth={endMonthIdx} endYear={endYear}
+            years={availableYears}
+            onStartMonthChange={m => { setStartMonthIdx(m); if (startYear === endYear && m > endMonthIdx) setEndMonthIdx(m); }}
+            onStartYearChange={y => { setStartYear(y); if (y > endYear) { setEndYear(y); setEndMonthIdx(startMonthIdx); } }}
+            onEndMonthChange={m => { setEndMonthIdx(m); if (startYear === endYear && m < startMonthIdx) setStartMonthIdx(m); }}
+            onEndYearChange={y => { setEndYear(y); if (y < startYear) { setStartYear(y); setStartMonthIdx(endMonthIdx); } }}
           />
         </div>
       </header>

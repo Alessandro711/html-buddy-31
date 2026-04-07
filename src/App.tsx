@@ -5,29 +5,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import Index from "./pages/Index";
 import Lancamentos from "./pages/Lancamentos";
+import ThemeToggle from "@/components/dashboard/ThemeToggle";
 import { LayoutDashboard, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-// Brand colors matching the clinic logo (gold/bronze tone)
-const BRAND = {
-  bg:         "#2D2417",   // dark warm brown
-  bgHover:    "#3D3020",   // slightly lighter on hover
-  bgActive:   "#4A3A28",   // active item bg
-  border:     "#5A4A30",   // subtle border
-  accent:     "#C9A96E",   // gold accent (logo color)
-  accentSoft: "#E8D5A3",   // lighter gold for text
-  text:       "#F5EDD8",   // warm white text
-  textMuted:  "#A89070",   // muted warm text
-};
-
 const App = () => {
-  const [tab,      setTab]      = useState<"dashboard" | "lancamentos">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "lancamentos">("dashboard");
   const [sideOpen, setSideOpen] = useState(true);
 
   const NAV = [
-    { id: "dashboard",   label: "Dashboard",    icon: LayoutDashboard },
-    { id: "lancamentos", label: "Lançamentos",  icon: ClipboardList   },
+    { id: "dashboard",   label: "Dashboard",   icon: LayoutDashboard },
+    { id: "lancamentos", label: "Lançamentos", icon: ClipboardList   },
   ] as const;
 
   return (
@@ -37,8 +26,6 @@ const App = () => {
         <Sonner />
 
         <div className="flex min-h-screen bg-background relative">
-
-          {/* Mobile overlay */}
           {sideOpen && (
             <div
               className="fixed inset-0 z-30 bg-black/40 lg:hidden"
@@ -46,20 +33,21 @@ const App = () => {
             />
           )}
 
-          {/* ── Sidebar ──────────────────────────────────────────────────── */}
+          {/* Sidebar */}
           <aside
-            className="flex flex-col flex-shrink-0 z-40 fixed lg:relative top-0 left-0 h-screen transition-all duration-200 ease-in-out"
-            style={{
-              width:           sideOpen ? 220 : 56,
-              backgroundColor: BRAND.bg,
-              borderRight:     `1px solid ${BRAND.border}`,
-              transform:       undefined,
-            }}
+            className="flex flex-col flex-shrink-0 z-40 fixed lg:relative top-0 left-0 h-screen transition-all duration-200 ease-in-out bg-sidebar border-r border-sidebar-border"
+            style={{ width: sideOpen ? 220 : 56 }}
           >
+            {/* Brand */}
+            {sideOpen && (
+              <div className="px-4 py-5 border-b border-sidebar-border">
+                <h2 className="text-sm font-bold text-sidebar-primary tracking-wide">CLÍNICA DRA GREICE</h2>
+                <p className="text-[10px] text-sidebar-foreground/50 mt-0.5">Painel Financeiro</p>
+              </div>
+            )}
 
-
-            {/* ── Nav items ────────────────────────────────────────────── */}
-            <nav className="flex-1 py-4 space-y-1" style={{ padding: "16px 8px" }}>
+            {/* Nav items */}
+            <nav className="flex-1 py-4 px-2 space-y-1">
               {NAV.map(({ id, label, icon: Icon }) => {
                 const isActive = tab === id;
                 return (
@@ -67,25 +55,17 @@ const App = () => {
                     key={id}
                     onClick={() => setTab(id)}
                     title={!sideOpen ? label : undefined}
-                    className="w-full flex items-center rounded-lg transition-all duration-150"
-                    style={{
-                      gap:             sideOpen ? 10 : 0,
-                      padding:         sideOpen ? "10px 12px" : "10px 0",
-                      justifyContent:  sideOpen ? "flex-start" : "center",
-                      backgroundColor: isActive ? BRAND.bgActive : "transparent",
-                      borderLeft:      isActive ? `3px solid ${BRAND.accent}` : "3px solid transparent",
-                      color:           isActive ? BRAND.accent : BRAND.textMuted,
-                    }}
-                    onMouseEnter={e => {
-                      if (!isActive) (e.currentTarget as HTMLButtonElement).style.backgroundColor = BRAND.bgHover;
-                    }}
-                    onMouseLeave={e => {
-                      if (!isActive) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
-                    }}
+                    className={`w-full flex items-center rounded-lg transition-all duration-150 ${
+                      sideOpen ? "gap-2.5 px-3 py-2.5" : "justify-center py-2.5"
+                    } ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-primary border-l-[3px] border-sidebar-primary"
+                        : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 border-l-[3px] border-transparent"
+                    }`}
                   >
-                    <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+                    <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                     {sideOpen && (
-                      <span className="truncate" style={{ fontSize: 13, fontWeight: isActive ? 600 : 400 }}>
+                      <span className={`text-[13px] truncate ${isActive ? "font-semibold" : "font-normal"}`}>
                         {label}
                       </span>
                     )}
@@ -94,32 +74,28 @@ const App = () => {
               })}
             </nav>
 
-            {/* ── Toggle button ────────────────────────────────────────── */}
-            <div style={{ padding: 8, borderTop: `1px solid ${BRAND.border}` }}>
+            {/* Bottom: theme toggle + collapse */}
+            <div className="border-t border-sidebar-border p-2 space-y-1">
+              <div className="flex justify-center">
+                <ThemeToggle />
+              </div>
               <button
                 onClick={() => setSideOpen(o => !o)}
-                className="w-full flex items-center justify-center rounded-lg transition-colors"
-                style={{ padding: "8px", color: BRAND.textMuted }}
+                className="w-full flex items-center justify-center rounded-lg transition-colors py-2 text-sidebar-foreground/60 hover:bg-sidebar-accent/50"
                 title={sideOpen ? "Recolher" : "Expandir"}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = BRAND.bgHover; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}
               >
                 {sideOpen
-                  ? <ChevronLeft  style={{ width: 18, height: 18 }} />
-                  : <ChevronRight style={{ width: 18, height: 18 }} />
+                  ? <ChevronLeft className="h-[18px] w-[18px]" />
+                  : <ChevronRight className="h-[18px] w-[18px]" />
                 }
               </button>
             </div>
           </aside>
 
-          {/* ── Main content ─────────────────────────────────────────────── */}
-          <main
-            className="flex-1 min-w-0 overflow-auto min-h-screen transition-all duration-200"
-            style={{ marginLeft: 0 }}
-          >
+          {/* Main content */}
+          <main className="flex-1 min-w-0 overflow-auto min-h-screen transition-all duration-200">
             {tab === "dashboard" ? <Index /> : <Lancamentos />}
           </main>
-
         </div>
       </TooltipProvider>
     </QueryClientProvider>

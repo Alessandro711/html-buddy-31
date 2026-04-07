@@ -148,7 +148,7 @@ const Index = () => {
   // Valor total pendente no período filtrado
   const inadimplenciaValor = useMemo(() => {
     return pendentes
-      .filter(p => { const d = new Date((p.data||'')+'T12:00:00'); const k = `${d.getFullYear()}-${ALL_MONTHS[d.getMonth()]}`; return filteredMonthKeys.includes(k); })
+      .filter(p => { const d = new Date(((p as any).data||'')+'T12:00:00'); const k = `${d.getFullYear()}-${ALL_MONTHS[d.getMonth()]}`; return filteredMonthKeys.includes(k); })
       .reduce((s,p) => s + Number(p.valor), 0);
   }, [pendentes, filteredMonths]);
 

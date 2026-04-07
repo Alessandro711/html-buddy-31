@@ -65,6 +65,7 @@ export type OperationalRow = {
 
 // ─── Default / fallback data (zeros) ─────────────────────────────────────────
 const ZERO_EXP: Omit<ExpenseRow,"month"> = {
+  ano: new Date().getFullYear(),
   folhaPagamento:0, materiaisInsumos:0, aluguelCondominio:0,
   equipamentos:0, marketing:0, impostos:0, outros:0,
   receitasFinanceiras:0, despesasFinanceiras:0, irCsll:0, descontosAbatimentos:0,
@@ -72,9 +73,10 @@ const ZERO_EXP: Omit<ExpenseRow,"month"> = {
 
 const ALL_MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
-export const monthlyRevenue: RevenuePoint[] = ALL_MONTHS.map(m=>({month:m,faturamento:0,despesas:0,lucro:0}));
+const CY = new Date().getFullYear();
+export const monthlyRevenue: RevenuePoint[] = ALL_MONTHS.map(m=>({month:m,ano:CY,faturamento:0,despesas:0,lucro:0}));
 export const monthlyExpenseBreakdown: ExpenseRow[] = ALL_MONTHS.map(m=>({month:m,...ZERO_EXP}));
-export const monthlyServiceRevenue: ServiceRow[] = ALL_MONTHS.map(m=>({month:m,consultas:0,exames:0,procedimentos:0,retornos:0,outros:0}));
+export const monthlyServiceRevenue: ServiceRow[] = ALL_MONTHS.map(m=>({month:m,ano:CY,consultas:0,exames:0,procedimentos:0,retornos:0,outros:0}));
 export const cashFlowData: CashFlowPoint[] = ALL_MONTHS.map(m=>({month:m,entradas:0,saidas:0}));
 
 // ─── Helper functions ─────────────────────────────────────────────────────────

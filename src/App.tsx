@@ -85,7 +85,7 @@ const App = () => {
                   >
                     <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
                     {sideOpen && (
-                      <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, truncate: true }}>
+                      <span className="truncate" style={{ fontSize: 13, fontWeight: isActive ? 600 : 400 }}>
                         {label}
                       </span>
                     )}

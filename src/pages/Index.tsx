@@ -95,20 +95,31 @@ const Index = () => {
     });
   }, [refetch]);
 
-  // ── Date range filter (stored as ISO date strings) ────────────────────────
-  const [startDate, setStartDate] = useState(`${CURRENT_YEAR}-01-01`);
-  const [endDate,   setEndDate]   = useState(`${CURRENT_YEAR}-12-31`);
+  // ── Month/Year filter state ────────────────────────────────────────────────
+  const [startMonthIdx, setStartMonthIdx] = useState(0);
+  const [startYear, setStartYear]         = useState(CURRENT_YEAR);
+  const [endMonthIdx, setEndMonthIdx]     = useState(11);
+  const [endYear, setEndYear]             = useState(CURRENT_YEAR);
+
+  // Available years for selector
+  const availableYears = useMemo(() => {
+    const minY = dateBounds.minDate ? parseInt(dateBounds.minDate.split("-")[0]) : CURRENT_YEAR;
+    const maxY = dateBounds.maxDate ? parseInt(dateBounds.maxDate.split("-")[0]) : CURRENT_YEAR;
+    const years: number[] = [];
+    for (let y = minY; y <= maxY; y++) years.push(y);
+    if (years.length === 0) years.push(CURRENT_YEAR);
+    return years;
+  }, [dateBounds.minDate, dateBounds.maxDate]);
 
   // Auto-set filter to min/max dates in DB once loaded
   useEffect(() => {
     if (dateBounds.minDate && dateBounds.maxDate) {
-      setStartDate(dateBounds.minDate);
-      setEndDate(dateBounds.maxDate);
+      const { year: minY, monthIdx: minM } = parseDate(dateBounds.minDate);
+      const { year: maxY, monthIdx: maxM } = parseDate(dateBounds.maxDate);
+      setStartYear(minY); setStartMonthIdx(minM);
+      setEndYear(maxY);   setEndMonthIdx(maxM);
     }
   }, [dateBounds.minDate, dateBounds.maxDate]);
-
-  const { year: startYear, monthIdx: startMonthIdx } = parseDate(startDate);
-  const { year: endYear,   monthIdx: endMonthIdx   } = parseDate(endDate);
 
   // filteredMonthKeys: "YYYY-Mon" strings covering the full selected date range
   const filteredMonthKeys = useMemo(() => {

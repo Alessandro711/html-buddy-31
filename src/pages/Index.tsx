@@ -31,41 +31,47 @@ const parseDate = (s: string) => {
 };
 
 
-// ── DateRangeFilter ──────────────────────────────────────────────────────────
-function DateRangeFilter({
-  startDate, endDate, minDate, maxDate, onStartChange, onEndChange,
-}: {
-  startDate: string; endDate: string;
-  minDate: string;   maxDate: string;
-  onStartChange: (d: string) => void;
-  onEndChange:   (d: string) => void;
+// ── MonthYearFilter ──────────────────────────────────────────────────────────
+function MonthYearSelector({ label, month, year, months, years, onMonthChange, onYearChange }: {
+  label: string; month: number; year: number;
+  months: typeof ALL_MONTHS; years: number[];
+  onMonthChange: (m: number) => void; onYearChange: (y: number) => void;
 }) {
-  const inputCls = [
-    "h-9 w-36 rounded-xl border border-border bg-card px-3 text-sm text-foreground",
+  const selectCls = [
+    "h-9 rounded-xl border border-border bg-card px-2 text-sm text-foreground",
     "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary",
-    "hover:border-primary/50 transition-all [color-scheme:light] cursor-pointer",
+    "hover:border-primary/50 transition-all cursor-pointer appearance-none",
   ].join(" ");
 
   return (
-    <div className="flex items-center gap-2 bg-muted/40 rounded-2xl px-3 py-1.5 border border-border/60">
-      <span className="text-xs text-muted-foreground font-medium select-none whitespace-nowrap">De</span>
-      <input
-        type="date"
-        value={startDate}
-        min={minDate || undefined}
-        max={endDate  || undefined}
-        onChange={e => { if (e.target.value) onStartChange(e.target.value); }}
-        className={inputCls}
-      />
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground font-medium select-none whitespace-nowrap">{label}</span>
+      <select value={month} onChange={e => onMonthChange(Number(e.target.value))} className={selectCls}>
+        {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+      </select>
+      <select value={year} onChange={e => onYearChange(Number(e.target.value))} className={selectCls}>
+        {years.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function DateRangeFilter({
+  startMonth, startYear, endMonth, endYear, years,
+  onStartMonthChange, onStartYearChange, onEndMonthChange, onEndYearChange,
+}: {
+  startMonth: number; startYear: number; endMonth: number; endYear: number;
+  years: number[];
+  onStartMonthChange: (m: number) => void; onStartYearChange: (y: number) => void;
+  onEndMonthChange: (m: number) => void; onEndYearChange: (y: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-muted/40 rounded-2xl px-3 py-1.5 border border-border/60 flex-wrap">
+      <MonthYearSelector label="De" month={startMonth} year={startYear} months={ALL_MONTHS} years={years}
+        onMonthChange={onStartMonthChange} onYearChange={onStartYearChange} />
       <span className="text-muted-foreground select-none">→</span>
-      <input
-        type="date"
-        value={endDate}
-        min={startDate || undefined}
-        max={maxDate   || undefined}
-        onChange={e => { if (e.target.value) onEndChange(e.target.value); }}
-        className={inputCls}
-      />
+      <MonthYearSelector label="Até" month={endMonth} year={endYear} months={ALL_MONTHS} years={years}
+        onMonthChange={onEndMonthChange} onYearChange={onEndYearChange} />
     </div>
   );
 }

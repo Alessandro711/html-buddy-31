@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import logoClinica from "@/assets/logo-clinica.jpg";
 import { DollarSign, TrendingUp, TrendingDown, Percent, Receipt, AlertTriangle, Tag } from "lucide-react";
+import EmptyState from "@/components/dashboard/EmptyState";
 import KPICard from "@/components/dashboard/KPICard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import ExpensePieChart from "@/components/dashboard/ExpensePieChart";

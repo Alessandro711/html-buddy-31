@@ -309,6 +309,8 @@ const Index = () => {
         {/* ── DRE (filtro de data) ──────────────────────────────────────────── */}
         <DRETable data={filteredDre} periodLabel={periodLabel} />
 
+        </>
+        )}
       </main>
     </div>
   );

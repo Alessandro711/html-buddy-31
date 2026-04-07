@@ -50,7 +50,9 @@ export type Database = {
           categoria: string
           created_at: string
           data: string
+          desconto: number
           descricao: string
+          forma_pagamento: string
           id: string
           mes: string
           status: string
@@ -63,7 +65,9 @@ export type Database = {
           categoria?: string
           created_at?: string
           data: string
+          desconto?: number
           descricao?: string
+          forma_pagamento?: string
           id?: string
           mes: string
           status?: string
@@ -76,7 +80,9 @@ export type Database = {
           categoria?: string
           created_at?: string
           data?: string
+          desconto?: number
           descricao?: string
+          forma_pagamento?: string
           id?: string
           mes?: string
           status?: string

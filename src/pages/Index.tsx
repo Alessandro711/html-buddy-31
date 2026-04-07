@@ -247,12 +247,13 @@ const Index = () => {
 
           {/* Filtro de período */}
           <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            minDate={dateBounds.minDate}
-            maxDate={dateBounds.maxDate}
-            onStartChange={val => { setStartDate(val); if (val > endDate) setEndDate(val); }}
-            onEndChange={val => { setEndDate(val); if (val < startDate) setStartDate(val); }}
+            startMonth={startMonthIdx} startYear={startYear}
+            endMonth={endMonthIdx} endYear={endYear}
+            years={availableYears}
+            onStartMonthChange={m => { setStartMonthIdx(m); if (startYear === endYear && m > endMonthIdx) setEndMonthIdx(m); }}
+            onStartYearChange={y => { setStartYear(y); if (y > endYear) { setEndYear(y); setEndMonthIdx(startMonthIdx); } }}
+            onEndMonthChange={m => { setEndMonthIdx(m); if (startYear === endYear && m < startMonthIdx) setStartMonthIdx(m); }}
+            onEndYearChange={y => { setEndYear(y); if (y < startYear) { setStartYear(y); setStartMonthIdx(endMonthIdx); } }}
           />
         </div>
       </header>

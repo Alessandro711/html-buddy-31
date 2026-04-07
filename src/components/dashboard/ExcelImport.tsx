@@ -55,39 +55,52 @@ const getDateStr = (v: unknown): string => {
 
 async function recomputeMonth(mes: string) {
   const { data: rows } = await supabase.from("lancamentos").select("*").eq("mes", mes).eq("status", "pago");
-  if (!rows) return;
-  const receitas = rows.filter(r => r.tipo === "receita");
-  const despesas = rows.filter(r => r.tipo === "despesa");
-  const totalRec  = receitas.reduce((s, r) => s + Number(r.valor), 0);
-  const totalDesp = despesas.reduce((s, r) => s + Number(r.valor), 0);
+  if (!rows || rows.length === 0) return;
 
-  await supabase.from("monthly_revenue").upsert(
-    { month: mes, faturamento: totalRec, despesas: totalDesp, lucro: totalRec - totalDesp },
-    { onConflict: "month" }
-  );
+  // Group by ano for multi-year support
+  const byAno: Record<number, typeof rows> = {};
+  rows.forEach(r => {
+    const a = r.ano ?? new Date().getFullYear();
+    if (!byAno[a]) byAno[a] = [];
+    byAno[a].push(r);
+  });
 
-  const exp: Record<string, number> = {
-    folha_pagamento:0, materiais_insumos:0, aluguel_condominio:0,
-    equipamentos:0, marketing:0, impostos:0, outros:0,
-    receitas_financeiras:0, despesas_financeiras:0, ir_csll:0, descontos_abatimentos:0,
-  };
-  receitas.filter(r => r.categoria === "Receitas Financeiras").forEach(r => { exp.receitas_financeiras += Number(r.valor); });
-  despesas.forEach(r => { const col = CAT_TO_EXP[r.categoria]; if (col && col in exp) exp[col] += Number(r.valor); });
-  await supabase.from("monthly_expenses").upsert({ month: mes, ...exp }, { onConflict: "month" });
+  for (const [anoStr, anoRows] of Object.entries(byAno)) {
+    const ano = Number(anoStr);
+    const receitas = anoRows.filter(r => r.tipo === "receita");
+    const despesas = anoRows.filter(r => r.tipo === "despesa");
+    const totalRec  = receitas.reduce((s, r) => s + Number(r.valor), 0);
+    const totalDesp = despesas.reduce((s, r) => s + Number(r.valor), 0);
+    const totalDesc = receitas.reduce((s, r) => s + Number(r.desconto || 0), 0);
 
-  const svc: Record<string,number> = { consultas:0, exames:0, procedimentos:0, retornos:0, outros:0 };
-  const svcMap: Record<string,string> = { "Consultas":"consultas","Exames":"exames","Procedimentos":"procedimentos","Retornos":"retornos","Outros (Receita)":"outros" };
-  receitas.filter(r => r.categoria !== "Receitas Financeiras").forEach(r => { const c = svcMap[r.categoria]; if (c) svc[c] += Number(r.valor); });
-  await supabase.from("monthly_service_revenue").upsert({ month: mes, ...svc }, { onConflict: "month" });
-  await supabase.from("cash_flow").upsert({ month: mes, entradas: totalRec, saidas: totalDesp }, { onConflict: "month" });
+    await supabase.from("monthly_revenue").upsert(
+      { month: mes, ano, faturamento: totalRec, despesas: totalDesp, lucro: totalRec - totalDesp, desconto_total: totalDesc },
+      { onConflict: "month,ano" }
+    );
 
-  const atend = receitas.filter(r => ["Consultas","Retornos"].includes(r.categoria)).length;
-  const pend  = (await supabase.from("lancamentos").select("id").eq("mes",mes).eq("tipo","receita").eq("status","pendente")).data?.length ?? 0;
-  const tot   = rows.filter(r => r.tipo === "receita").length;
-  await supabase.from("monthly_operational").upsert(
-    { month: mes, atendimentos: atend, inadimplencia: tot + pend > 0 ? Math.round((pend / (tot + pend)) * 1000) / 10 : 0 },
-    { onConflict: "month" }
-  );
+    const exp: Record<string, number> = {
+      folha_pagamento:0, materiais_insumos:0, aluguel_condominio:0,
+      equipamentos:0, marketing:0, impostos:0, outros:0,
+      receitas_financeiras:0, despesas_financeiras:0, ir_csll:0, descontos_abatimentos:0,
+    };
+    receitas.filter(r => r.categoria === "Receitas Financeiras").forEach(r => { exp.receitas_financeiras += Number(r.valor); });
+    despesas.forEach(r => { const col = CAT_TO_EXP[r.categoria]; if (col && col in exp) exp[col] += Number(r.valor); });
+    await supabase.from("monthly_expenses").upsert({ month: mes, ano, ...exp }, { onConflict: "month,ano" });
+
+    const svc: Record<string,number> = { consultas:0, exames:0, procedimentos:0, retornos:0, outros:0 };
+    const svcMap: Record<string,string> = { "Consultas":"consultas","Exames":"exames","Procedimentos":"procedimentos","Retornos":"retornos","Outros (Receita)":"outros" };
+    receitas.filter(r => r.categoria !== "Receitas Financeiras").forEach(r => { const c = svcMap[r.categoria]; if (c) svc[c] += Number(r.valor); });
+    await supabase.from("monthly_service_revenue").upsert({ month: mes, ano, ...svc }, { onConflict: "month,ano" });
+    await supabase.from("cash_flow").upsert({ month: mes, ano, entradas: totalRec, saidas: totalDesp }, { onConflict: "month,ano" });
+
+    const atend = receitas.filter(r => ["Consultas","Retornos"].includes(r.categoria)).length;
+    const pend  = (await supabase.from("lancamentos").select("id").eq("mes",mes).eq("ano",ano).eq("tipo","receita").eq("status","pendente")).data?.length ?? 0;
+    const tot   = receitas.length;
+    await supabase.from("monthly_operational").upsert(
+      { month: mes, ano, atendimentos: atend, inadimplencia: tot + pend > 0 ? Math.round((pend / (tot + pend)) * 1000) / 10 : 0 },
+      { onConflict: "month,ano" }
+    );
+  }
 }
 
 interface ImportResult {

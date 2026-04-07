@@ -355,16 +355,13 @@ export default function Lancamentos() {
           const honorV = numVal(row[iHonorL]);
           const descV  = iDescL >= 0 ? numVal(row[iDescL]) : 0;
           const valor  = honorV - descV;
-          const pront  = iProntL >= 0 ? String(row[iProntL] ?? "").trim() : "";
           const dStr   = getD(dateVal);
-          const idAtend = pront && dStr ? (() => { const [y,m,d] = dStr.split("-"); return `${pront}-${d}-${m}-${y}`; })() : "";
           if (!byMonth[mes]) byMonth[mes] = [];
           byMonth[mes].push({
             data: dStr, mes, tipo: "receita",
             categoria: mapTipo(tipoVal),
             descricao: `${tipoVal} — ${iProf >= 0 ? String(row[iProf] ?? "") : ""}`,
             valor, desconto: descV,
-            id_atendimento: idAtend,
             forma_pagamento: iConv >= 0 ? String(row[iConv] ?? "PARTICULAR") : "PARTICULAR",
             status: "pago",
           });
@@ -372,24 +369,21 @@ export default function Lancamentos() {
         if (!Object.keys(byMonth).length) throw new Error("Nenhuma linha válida encontrada.");
         let totalNew = 0;
         for (const [mes, rows] of Object.entries(byMonth)) {
-          // Get existing id_atendimentos to avoid duplicates
-          const { data: existing } = await supabase
-            .from("lancamentos").select("id_atendimento, categoria")
-            .eq("mes", mes).eq("tipo", "receita");
-          const existSet = new Set((existing||[]).map((e:any)=>`${e.id_atendimento}|${e.categoria}`));
-          const newRows = (rows as any[]).filter((r:any) =>
-            !r.id_atendimento || !existSet.has(`${r.id_atendimento}|${r.categoria}`)
-          );
-          if (newRows.length > 0) {
-            for (let i = 0; i < newRows.length; i += 200)
-              await supabase.from("lancamentos").insert(newRows.slice(i, i+200));
+          // Delete existing receitas for this month, then insert fresh
+          await supabase.from("lancamentos").delete().eq("mes", mes).eq("tipo", "receita");
+          const insertRows = rows as any[];
+          if (insertRows.length > 0) {
+            for (let i = 0; i < insertRows.length; i += 200) {
+              const { error } = await supabase.from("lancamentos").insert(insertRows.slice(i, i+200));
+              if (error) console.error("Insert error:", error);
+            }
           }
-          totalNew += newRows.length;
+          totalNew += insertRows.length;
           await recomputeMonth(mes);
         }
-        showToast(`Receitas importadas! ${totalNew} novos registros adicionados.`);
+        showToast(`Receitas importadas! ${totalNew} registros processados.`);
         // Signal dashboard to refresh
-        try { localStorage.removeItem('clinica_financial_cache_v4'); window.dispatchEvent(new Event('clinica_data_updated')); } catch {}
+        try { localStorage.removeItem('clinica_financial_cache_v5'); window.dispatchEvent(new Event('clinica_data_updated')); } catch {}
 
       // ── DESPESA: formato do modelo de despesas ─────────────────────────────
       } else {

@@ -81,16 +81,16 @@ const Index = () => {
   const { revenue, expenses, services, cashFlow, operational, dateBounds, loading, refetch } = useFinancialData();
 
   // ── Fetch pendentes para inadimplência real ───────────────────────────────
-  const [pendentes, setPendentes] = useState<{mes:string; valor:number}[]>([]);
+  const [pendentes, setPendentes] = useState<{mes:string; ano:number; valor:number}[]>([]);
   useEffect(() => {
     import("@/integrations/supabase/client").then(({supabase}) => {
       supabase
         .from("lancamentos")
-        .select("mes,valor")
+        .select("mes,ano,valor")
         .eq("tipo","receita")
         .eq("status","pendente")
         .then(({data}) => {
-          if (data) setPendentes(data as {mes:string;valor:number}[]);
+          if (data) setPendentes(data as {mes:string;ano:number;valor:number}[]);
         });
     });
   }, [refetch]);
@@ -150,56 +150,53 @@ const Index = () => {
   // Filtered subsets for KPIs / DRE / pie charts
   const filteredRevenue = useMemo(
     () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano ?? CURRENT_YEAR}-${r.month}`)),
-    [revenue, filteredMonths]
+    [revenue, filteredMonthKeys]
   );
 
   const filteredExpenseBreakdown = useMemo(
     () => getExpenseBreakdownFromData(expenses, filteredMonthKeys),
-    [expenses, filteredMonths]
+    [expenses, filteredMonthKeys]
   );
 
   const filteredServiceRevenue = useMemo(
     () => getRevenueByServiceFromData(services, filteredMonthKeys),
-    [services, filteredMonths]
+    [services, filteredMonthKeys]
   );
 
   // Valor total pendente no período filtrado
   const inadimplenciaValor = useMemo(() => {
     return pendentes
-      .filter(p => { const d = new Date(((p as any).data||'')+'T12:00:00'); const k = `${d.getFullYear()}-${ALL_MONTHS[d.getMonth()]}`; return filteredMonthKeys.includes(k); })
+      .filter(p => {
+        const key = `${p.ano ?? CURRENT_YEAR}-${p.mes}`;
+        return filteredMonthKeys.includes(key);
+      })
       .reduce((s,p) => s + Number(p.valor), 0);
-  }, [pendentes, filteredMonths]);
+  }, [pendentes, filteredMonthKeys]);
 
   // % do faturamento total
   const inadimplenciaPercFat = useMemo(() => {
-    const fat = revenue
-      .filter(r => filteredMonths.includes(r.month))
-      .reduce((s,r) => s + r.faturamento, 0);
+    const fat = filteredRevenue.reduce((s,r) => s + r.faturamento, 0);
     return fat > 0 ? Math.round((inadimplenciaValor / fat) * 1000) / 10 : 0;
-  }, [inadimplenciaValor, revenue, filteredMonths]);
+  }, [inadimplenciaValor, filteredRevenue]);
 
   // Desconto total do período filtrado (vem de monthly_revenue.desconto_total)
   const descontoTotal = useMemo(() => {
-    return revenue
-      .filter(r => filteredMonths.includes(r.month))
-      .reduce((s, r) => s + (r.desconto_total || 0), 0);
-  }, [revenue, filteredMonths]);
+    return filteredRevenue.reduce((s, r) => s + (r.desconto_total || 0), 0);
+  }, [filteredRevenue]);
 
   const descontoPercFat = useMemo(() => {
-    const fat = revenue
-      .filter(r => filteredMonths.includes(r.month))
-      .reduce((s, r) => s + r.faturamento, 0);
+    const fat = filteredRevenue.reduce((s, r) => s + r.faturamento, 0);
     return fat > 0 ? Math.round((descontoTotal / fat) * 1000) / 10 : 0;
-  }, [descontoTotal, revenue, filteredMonths]);
+  }, [descontoTotal, filteredRevenue]);
 
   const filteredKpis = useMemo(
     () => getKpisFromData(revenue, expenses, operational, filteredMonthKeys),
-    [revenue, expenses, operational, filteredMonths]
+    [revenue, expenses, operational, filteredMonthKeys]
   );
 
   const filteredDre = useMemo(
     () => getDreFromData(revenue, expenses, filteredMonthKeys),
-    [revenue, expenses, filteredMonths]
+    [revenue, expenses, filteredMonthKeys]
   );
 
   // Previous period DRE for variation comparison

@@ -101,25 +101,39 @@ const Index = () => {
   const [endMonthIdx, setEndMonthIdx]     = useState(11);
   const [endYear, setEndYear]             = useState(CURRENT_YEAR);
 
-  // Available years for selector
+  // Available years — derived from actual data (revenue + expenses), not just lancamentos
   const availableYears = useMemo(() => {
-    const minY = dateBounds.minDate ? parseInt(dateBounds.minDate.split("-")[0]) : CURRENT_YEAR;
-    const maxY = dateBounds.maxDate ? parseInt(dateBounds.maxDate.split("-")[0]) : CURRENT_YEAR;
-    const years: number[] = [];
-    for (let y = minY; y <= maxY; y++) years.push(y);
-    if (years.length === 0) years.push(CURRENT_YEAR);
-    return years;
-  }, [dateBounds.minDate, dateBounds.maxDate]);
+    const yearsSet = new Set<number>();
+    revenue.forEach(r => yearsSet.add(r.ano));
+    expenses.forEach(e => yearsSet.add(e.ano));
+    if (dateBounds.minDate) yearsSet.add(parseInt(dateBounds.minDate.split("-")[0]));
+    if (dateBounds.maxDate) yearsSet.add(parseInt(dateBounds.maxDate.split("-")[0]));
+    if (yearsSet.size === 0) yearsSet.add(CURRENT_YEAR);
+    return [...yearsSet].sort((a,b) => a - b);
+  }, [revenue, expenses, dateBounds.minDate, dateBounds.maxDate]);
 
-  // Auto-set filter to min/max dates in DB once loaded
+  // Auto-set filter to actual data range once loaded
   useEffect(() => {
-    if (dateBounds.minDate && dateBounds.maxDate) {
+    if (revenue.length > 0 || expenses.length > 0) {
+      const allYears = [...new Set([...revenue.map(r=>r.ano), ...expenses.map(e=>e.ano)])].sort((a,b)=>a-b);
+      if (allYears.length > 0) {
+        const minY = allYears[0];
+        const maxY = allYears[allYears.length - 1];
+        // Find min/max month for those years
+        const minMonths = revenue.filter(r=>r.ano===minY).map(r=>ALL_MONTHS.indexOf(r.month)).filter(i=>i>=0);
+        const maxMonths = revenue.filter(r=>r.ano===maxY).map(r=>ALL_MONTHS.indexOf(r.month)).filter(i=>i>=0);
+        setStartYear(minY);
+        setStartMonthIdx(minMonths.length > 0 ? Math.min(...minMonths) : 0);
+        setEndYear(maxY);
+        setEndMonthIdx(maxMonths.length > 0 ? Math.max(...maxMonths) : 11);
+      }
+    } else if (dateBounds.minDate && dateBounds.maxDate) {
       const { year: minY, monthIdx: minM } = parseDate(dateBounds.minDate);
       const { year: maxY, monthIdx: maxM } = parseDate(dateBounds.maxDate);
       setStartYear(minY); setStartMonthIdx(minM);
       setEndYear(maxY);   setEndMonthIdx(maxM);
     }
-  }, [dateBounds.minDate, dateBounds.maxDate]);
+  }, [revenue, expenses, dateBounds.minDate, dateBounds.maxDate]);
 
   // filteredMonthKeys: "YYYY-Mon" strings covering the full selected date range
   const filteredMonthKeys = useMemo(() => {

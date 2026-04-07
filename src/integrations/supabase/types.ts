@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       cash_flow: {
         Row: {
+          ano: number
           created_at: string
           entradas: number
           id: string
@@ -24,6 +25,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ano?: number
           created_at?: string
           entradas?: number
           id?: string
@@ -32,59 +34,118 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ano?: number
           created_at?: string
           entradas?: number
           id?: string
           month?: string
           saidas?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      lancamentos: {
+        Row: {
+          ano: number
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          mes: string
+          status: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ano?: number
+          categoria?: string
+          created_at?: string
+          data: string
+          descricao?: string
+          id?: string
+          mes: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ano?: number
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          mes?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
         }
         Relationships: []
       }
       monthly_expenses: {
         Row: {
           aluguel_condominio: number
+          ano: number
           created_at: string
+          descontos_abatimentos: number
+          despesas_financeiras: number
           equipamentos: number
           folha_pagamento: number
           id: string
           impostos: number
+          ir_csll: number
           marketing: number
           materiais_insumos: number
           month: string
           outros: number
+          receitas_financeiras: number
           updated_at: string
         }
         Insert: {
           aluguel_condominio?: number
+          ano?: number
           created_at?: string
+          descontos_abatimentos?: number
+          despesas_financeiras?: number
           equipamentos?: number
           folha_pagamento?: number
           id?: string
           impostos?: number
+          ir_csll?: number
           marketing?: number
           materiais_insumos?: number
           month: string
           outros?: number
+          receitas_financeiras?: number
           updated_at?: string
         }
         Update: {
           aluguel_condominio?: number
+          ano?: number
           created_at?: string
+          descontos_abatimentos?: number
+          despesas_financeiras?: number
           equipamentos?: number
           folha_pagamento?: number
           id?: string
           impostos?: number
+          ir_csll?: number
           marketing?: number
           materiais_insumos?: number
           month?: string
           outros?: number
+          receitas_financeiras?: number
           updated_at?: string
         }
         Relationships: []
       }
       monthly_operational: {
         Row: {
+          ano: number
           atendimentos: number
           created_at: string
           id: string
@@ -93,6 +154,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ano?: number
           atendimentos?: number
           created_at?: string
           id?: string
@@ -101,6 +163,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ano?: number
           atendimentos?: number
           created_at?: string
           id?: string
@@ -112,7 +175,9 @@ export type Database = {
       }
       monthly_revenue: {
         Row: {
+          ano: number
           created_at: string
+          desconto_total: number
           despesas: number
           faturamento: number
           id: string
@@ -121,7 +186,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ano?: number
           created_at?: string
+          desconto_total?: number
           despesas?: number
           faturamento?: number
           id?: string
@@ -130,7 +197,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ano?: number
           created_at?: string
+          desconto_total?: number
           despesas?: number
           faturamento?: number
           id?: string
@@ -142,6 +211,7 @@ export type Database = {
       }
       monthly_service_revenue: {
         Row: {
+          ano: number
           consultas: number
           created_at: string
           exames: number
@@ -153,6 +223,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ano?: number
           consultas?: number
           created_at?: string
           exames?: number
@@ -164,6 +235,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ano?: number
           consultas?: number
           created_at?: string
           exames?: number

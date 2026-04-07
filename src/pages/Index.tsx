@@ -242,6 +242,12 @@ const Index = () => {
 
       <main className="w-full space-y-4 sm:space-y-6 px-3 py-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20">
 
+        {/* Empty state when no data */}
+        {!loading && revenue.length === 0 && expenses.length === 0 ? (
+          <EmptyState />
+        ) : (
+        <>
+
         {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
         {/* ── Skeleton when loading ── */}
         {loading ? (

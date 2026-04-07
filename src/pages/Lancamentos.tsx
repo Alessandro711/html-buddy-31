@@ -169,7 +169,7 @@ export default function Lancamentos() {
       .select("*")
       .order("data", { ascending: false })
       .limit(500);
-    setLancamentos((data as Lancamento[])||[]);
+    setLancamentos((data as unknown as Lancamento[])||[]);
     setLoading(false);
   },[]);
 

@@ -195,7 +195,7 @@ export default function DespesaImport({ onImportComplete }: Props) {
         await supabase.from("lancamentos").delete().eq("mes", mes).eq("tipo", "despesa");
 
         for (let i = 0; i < rows.length; i += 200)
-          await supabase.from("lancamentos").insert(rows.slice(i, i + 200));
+          await supabase.from("lancamentos").insert(rows.slice(i, i + 200) as any);
 
         await recomputeMonth(mes);
 

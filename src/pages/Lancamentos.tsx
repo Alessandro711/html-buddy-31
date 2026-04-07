@@ -119,7 +119,7 @@ async function recomputeMonth(mes: string) {
 
   await supabase.from("monthly_revenue").upsert(
     { month:mes, faturamento:totalRec, despesas:totalDesp, lucro:totalRec-totalDesp, desconto_total:totalDesc },
-    { onConflict:"month" }
+    { onConflict:"month,ano" }
   );
 
   const exp: Record<string,number> = {
@@ -129,20 +129,20 @@ async function recomputeMonth(mes: string) {
   };
   receitas.filter(r=>r.categoria==="Receitas Financeiras").forEach(r=>{ exp.receitas_financeiras+=Number(r.valor); });
   despesas.forEach(r=>{ const col=CAT_TO_EXP[r.categoria]; if(col&&col in exp) exp[col]+=Number(r.valor); });
-  await supabase.from("monthly_expenses").upsert({ month:mes,...exp },{ onConflict:"month" });
+  await supabase.from("monthly_expenses").upsert({ month:mes,...exp },{ onConflict:"month,ano" });
 
   const svc: Record<string,number> = { consultas:0,exames:0,procedimentos:0,retornos:0,outros:0 };
   receitas.filter(r=>r.categoria!=="Receitas Financeiras").forEach(r=>{
     const col=CAT_TO_SVC[r.categoria]; if(col&&col in svc) svc[col]+=Number(r.valor);
   });
-  await supabase.from("monthly_service_revenue").upsert({ month:mes,...svc },{ onConflict:"month" });
-  await supabase.from("cash_flow").upsert({ month:mes, entradas:totalRec, saidas:totalDesp },{ onConflict:"month" });
+  await supabase.from("monthly_service_revenue").upsert({ month:mes,...svc },{ onConflict:"month,ano" });
+  await supabase.from("cash_flow").upsert({ month:mes, entradas:totalRec, saidas:totalDesp },{ onConflict:"month,ano" });
 
   const atend = receitas.filter(r=>["Consultas","Retornos"].includes(r.categoria)).length;
   const pend = (await supabase.from("lancamentos").select("id").eq("mes",mes).eq("tipo","receita").eq("status","pendente")).data?.length??0;
   const total = rows.filter(r=>r.tipo==="receita").length;
   const inad = total+pend>0?Math.round((pend/(total+pend))*1000)/10:0;
-  await supabase.from("monthly_operational").upsert({ month:mes, atendimentos:atend, inadimplencia:inad },{ onConflict:"month" });
+  await supabase.from("monthly_operational").upsert({ month:mes, atendimentos:atend, inadimplencia:inad },{ onConflict:"month,ano" });
 }
 
 export default function Lancamentos() {

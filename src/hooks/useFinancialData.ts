@@ -11,8 +11,8 @@ const sortByYearMonth = <T extends {month:string; ano:number}>(rows:T[]) =>
   });
 
 // ── LocalStorage cache ────────────────────────────────────────────────────────
-const CACHE_KEY = "clinica_financial_cache_v4";
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY = "clinica_financial_cache_v5";
+const CACHE_TTL = 5 * 60 * 1000;
 
 function saveCache(data: object) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
@@ -28,7 +28,6 @@ function loadCache() {
   } catch { return null; }
 }
 
-// Min/max dates from lancamentos for initializing the filter
 export interface DateBounds { minDate: string; maxDate: string; }
 
 export function useFinancialData() {
@@ -63,12 +62,13 @@ export function useFinancialData() {
         supabase.from("lancamentos").select("data").order("data", {ascending:true}).limit(1),
       ]);
 
-      // Get max date separately
       const maxRes = await supabase.from("lancamentos").select("data").order("data", {ascending:false}).limit(1);
+
+      const CY = new Date().getFullYear();
 
       const parsedExpenses = expRes.data?.length ? sortByYearMonth(
         (expRes.data as any[]).map(e => ({
-          month: e.month, ano: e.ano ?? new Date().getFullYear(),
+          month: e.month, ano: e.ano ?? CY,
           folhaPagamento:       e.folha_pagamento       ?? 0,
           materiaisInsumos:     e.materiais_insumos     ?? 0,
           aluguelCondominio:    e.aluguel_condominio    ?? 0,
@@ -87,11 +87,11 @@ export function useFinancialData() {
       const maxDate = maxRes.data?.[0]?.data     ? String(maxRes.data[0].data).split("T")[0]   : "";
 
       const fresh = {
-        revenue:     revRes.data?.length ? sortByYearMonth(revRes.data.map((r:any) => ({...r, ano: r.ano ?? new Date().getFullYear()})) as any) : [],
+        revenue:     revRes.data?.length ? sortByYearMonth(revRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as any) : [],
         expenses:    parsedExpenses,
-        services:    svcRes.data?.length ? sortByYearMonth(svcRes.data.map((r:any) => ({...r, ano: r.ano ?? new Date().getFullYear()})) as ServiceRow[]) : [],
-        operational: opsRes.data?.length ? sortByYearMonth(opsRes.data.map((r:any) => ({...r, ano: r.ano ?? new Date().getFullYear()})) as OperationalRow[]) : [],
-        cashFlow:    cfRes.data?.length  ? sortByYearMonth(cfRes.data.map((r:any) => ({...r, ano: r.ano ?? new Date().getFullYear()})) as any[]) : [],
+        services:    svcRes.data?.length ? sortByYearMonth(svcRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as ServiceRow[]) : [],
+        operational: opsRes.data?.length ? sortByYearMonth(opsRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as OperationalRow[]) : [],
+        cashFlow:    cfRes.data?.length  ? sortByYearMonth(cfRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as any[]) : [],
         dateBounds:  { minDate, maxDate },
       };
 
@@ -109,7 +109,7 @@ export function useFinancialData() {
     if (cached) {
       applyData(cached);
       setLoading(false);
-      fetchFresh(false); // background refresh
+      fetchFresh(false);
       return;
     }
     await fetchFresh(true);
@@ -117,11 +117,10 @@ export function useFinancialData() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Listen for data updates triggered by Lancamentos page (import/save/delete)
   useEffect(() => {
     const handler = () => {
       console.log('[Dashboard] Data updated — refreshing...');
-      fetchFresh(false); // silent background refresh
+      fetchFresh(false);
     };
     window.addEventListener('clinica_data_updated', handler);
     return () => window.removeEventListener('clinica_data_updated', handler);

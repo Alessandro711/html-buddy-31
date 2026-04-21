@@ -160,7 +160,10 @@ export function useFinancialData() {
         return;
       }
 
-      const years = [...new Set(allRows.map((row) => row.ano ?? getYearFromDate(row.data)))].sort((a, b) => a - b);
+      const years = [...new Set(allRows
+        .map((row) => getPeriodFromDate(row.data)?.ano ?? row.ano)
+        .filter((year): year is number => Number.isInteger(year))
+      )].sort((a, b) => a - b);
       const revenueMap = new Map<string, RevenuePoint>();
       const expenseMap = new Map<string, ExpenseRow>();
       const serviceMap = new Map<string, ServiceRow>();
@@ -181,8 +184,9 @@ export function useFinancialData() {
       });
 
       for (const row of allRows) {
-        const month = MONTHS.includes(row.mes) ? row.mes : getMonthFromDate(row.data);
-        const ano = row.ano ?? getYearFromDate(row.data);
+        const period = getPeriodFromDate(row.data);
+        const month = period?.month;
+        const ano = period?.ano;
 
         if (!month) continue;
 

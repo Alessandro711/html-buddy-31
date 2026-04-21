@@ -17,12 +17,6 @@ const MONTH_NUM: Record<string,number> = { Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,J
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// Build a full ISO date string from a month abbreviation + year
-const toDate = (month: string, year: number, day: number) => {
-  const m = String(MONTH_NUM[month]).padStart(2,"0");
-  const d = String(day).padStart(2,"0");
-  return `${year}-${m}-${d}`;
-};
 
 // Parse "YYYY-MM-DD" into { year, monthIdx (0-based) }
 const parseDate = (s: string) => {
@@ -156,13 +150,6 @@ const Index = () => {
     return keys;
   }, [startMonthIdx, endMonthIdx, startYear, endYear]);
 
-  const filteredMonths = useMemo(() =>
-    [...new Set(filteredMonthKeys.map(k => k.split("-")[1]))],
-    [filteredMonthKeys]
-  );
-
-  const chartYear = startYear;
-
   const yearRevenue  = useMemo(
     () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano}-${r.month}`)),
     [revenue, filteredMonthKeys]
@@ -242,13 +229,11 @@ const Index = () => {
     const prev = prevDre.lucroLiquido;
     if (prev === 0) return cur > 0 ? 100 : 0;
     return Math.round((cur - prev) / Math.abs(prev) * 100 * 10) / 10;
-  }, [filteredDre, prevDre, filteredMonthKeys]);
+  }, [filteredDre, prevDre]);
 
-  // Labels
   const startLabel = `${String(MONTH_NUM[ALL_MONTHS[startMonthIdx]]).padStart(2,"0")}/${startYear}`;
   const endLabel   = `${String(MONTH_NUM[ALL_MONTHS[endMonthIdx]]).padStart(2,"0")}/${endYear}`;
   const periodLabel = `${startLabel} — ${endLabel}`;
-  const yearLabel   = `Jan — Dez ${chartYear}`;
 
   return (
     <div className="min-h-screen w-full bg-background">

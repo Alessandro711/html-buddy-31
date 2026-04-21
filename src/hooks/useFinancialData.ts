@@ -10,24 +10,6 @@ const sortByYearMonth = <T extends {month:string; ano:number}>(rows:T[]) =>
     return MONTHS.indexOf(a.month) - MONTHS.indexOf(b.month);
   });
 
-// ── LocalStorage cache ────────────────────────────────────────────────────────
-const CACHE_KEY = "clinica_financial_cache_v5";
-const CACHE_TTL = 5 * 60 * 1000;
-
-function saveCache(data: object) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
-}
-
-function loadCache() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts > CACHE_TTL) return null;
-    return data;
-  } catch { return null; }
-}
-
 export interface DateBounds { minDate: string; maxDate: string; }
 
 export function useFinancialData() {
@@ -38,15 +20,6 @@ export function useFinancialData() {
   const [operational, setOperational] = useState<OperationalRow[]>([]);
   const [dateBounds,  setDateBounds]  = useState<DateBounds>({ minDate: "", maxDate: "" });
   const [loading,     setLoading]     = useState(true);
-
-  const applyData = useCallback((d: any) => {
-    if (d.revenue?.length)     setRevenue(d.revenue);
-    if (d.expenses?.length)    setExpenses(d.expenses);
-    if (d.services?.length)    setServices(d.services);
-    if (d.operational?.length) setOperational(d.operational);
-    if (d.cashFlow?.length)    setCashFlow(d.cashFlow);
-    if (d.dateBounds?.minDate) setDateBounds(d.dateBounds);
-  }, []);
 
   const fetchFresh = useCallback(async (showLoading: boolean) => {
     if (showLoading) setLoading(true);
@@ -66,8 +39,8 @@ export function useFinancialData() {
 
       const CY = new Date().getFullYear();
 
-      const parsedExpenses = expRes.data?.length ? sortByYearMonth(
-        (expRes.data as any[]).map(e => ({
+      const parsedExpenses: ExpenseRow[] = sortByYearMonth(
+        ((expRes.data ?? []) as any[]).map(e => ({
           month: e.month, ano: e.ano ?? CY,
           folhaPagamento:       e.folha_pagamento       ?? 0,
           materiaisInsumos:     e.materiais_insumos     ?? 0,
@@ -81,41 +54,33 @@ export function useFinancialData() {
           irCsll:               e.ir_csll               ?? 0,
           descontosAbatimentos: e.descontos_abatimentos ?? 0,
         } satisfies ExpenseRow))
-      ) : [];
+      );
 
       const minDate = boundsRes.data?.[0]?.data ? String(boundsRes.data[0].data).split("T")[0] : "";
       const maxDate = maxRes.data?.[0]?.data     ? String(maxRes.data[0].data).split("T")[0]   : "";
 
-      const fresh = {
-        revenue:     revRes.data?.length ? sortByYearMonth(revRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as any) : [],
-        expenses:    parsedExpenses,
-        services:    svcRes.data?.length ? sortByYearMonth(svcRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as ServiceRow[]) : [],
-        operational: opsRes.data?.length ? sortByYearMonth(opsRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as OperationalRow[]) : [],
-        cashFlow:    cfRes.data?.length  ? sortByYearMonth(cfRes.data.map((r:any) => ({...r, ano: r.ano ?? CY})) as any[]) : [],
-        dateBounds:  { minDate, maxDate },
-      };
-
-      saveCache(fresh);
-      applyData(fresh);
+      setRevenue(sortByYearMonth(((revRes.data ?? []) as any[]).map(r => ({...r, ano: r.ano ?? CY}))) as RevenuePoint[]);
+      setExpenses(parsedExpenses);
+      setServices(sortByYearMonth(((svcRes.data ?? []) as any[]).map(r => ({...r, ano: r.ano ?? CY}))) as ServiceRow[]);
+      setOperational(sortByYearMonth(((opsRes.data ?? []) as any[]).map(r => ({...r, ano: r.ano ?? CY}))) as OperationalRow[]);
+      setCashFlow(sortByYearMonth(((cfRes.data ?? []) as any[]).map(r => ({...r, ano: r.ano ?? CY}))));
+      setDateBounds({ minDate, maxDate });
     } catch (err) {
       console.error("Error fetching financial data:", err);
     } finally {
       setLoading(false);
     }
-  }, [applyData]);
+  }, []);
 
-  const fetchData = useCallback(async () => {
-    const cached = loadCache();
-    if (cached) {
-      applyData(cached);
-      setLoading(false);
-      fetchFresh(false);
-      return;
-    }
-    await fetchFresh(true);
-  }, [fetchFresh, applyData]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    // Limpa qualquer cache legado
+    try {
+      localStorage.removeItem("clinica_financial_cache_v5");
+      localStorage.removeItem("clinica_financial_cache_v4");
+      localStorage.removeItem("clinica_financial_cache_v3");
+    } catch {}
+    fetchFresh(true);
+  }, [fetchFresh]);
 
   useEffect(() => {
     const handler = () => {
@@ -127,7 +92,6 @@ export function useFinancialData() {
   }, [fetchFresh]);
 
   const refetch = useCallback(async () => {
-    try { localStorage.removeItem(CACHE_KEY); } catch {}
     await fetchFresh(true);
   }, [fetchFresh]);
 

@@ -92,12 +92,11 @@ const sumByKeys = <T extends string>(
 
 const filterByMonths = <T extends {month:string; ano?:number}>(rows:T[], keys:string[]) => {
   if (!keys.length) return [];
-  // Detect if keys are year-aware ("2025-Jan") or plain ("Jan")
   const yearAware = keys[0].includes("-");
   return rows.filter(r => {
     if (yearAware) {
-      const rowKey = `${r.ano ?? new Date().getFullYear()}-${r.month}`;
-      return keys.includes(rowKey);
+      if (typeof r.ano !== "number") return false;
+      return keys.includes(`${r.ano}-${r.month}`);
     }
     return keys.includes(r.month);
   });

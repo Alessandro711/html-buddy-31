@@ -84,14 +84,22 @@ const emptyOperationalRow = (month: string, ano: number): OperationalRow => ({
 
 const normalizeDate = (value?: string) => (value ? String(value).split("T")[0] : "");
 
-const getMonthFromDate = (date: string) => {
-  const parsed = new Date(`${date}T12:00:00`);
-  return Number.isNaN(parsed.getTime()) ? "" : MONTHS[parsed.getMonth()] ?? "";
-};
+const getPeriodFromDate = (value?: string) => {
+  const normalized = normalizeDate(value);
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
-const getYearFromDate = (date: string) => {
-  const parsed = new Date(`${date}T12:00:00`);
-  return Number.isNaN(parsed.getTime()) ? new Date().getFullYear() : parsed.getFullYear();
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+
+  if (!Number.isInteger(year) || monthIndex < 0 || monthIndex > 11) return null;
+
+  return {
+    ano: year,
+    month: MONTHS[monthIndex],
+    normalized,
+  };
 };
 
 const getMonthKey = (ano: number, month: string) => `${ano}-${month}`;
@@ -152,7 +160,10 @@ export function useFinancialData() {
         return;
       }
 
-      const years = [...new Set(allRows.map((row) => row.ano ?? getYearFromDate(row.data)))].sort((a, b) => a - b);
+      const years = [...new Set(allRows
+        .map((row) => getPeriodFromDate(row.data)?.ano ?? row.ano)
+        .filter((year): year is number => Number.isInteger(year))
+      )].sort((a, b) => a - b);
       const revenueMap = new Map<string, RevenuePoint>();
       const expenseMap = new Map<string, ExpenseRow>();
       const serviceMap = new Map<string, ServiceRow>();
@@ -173,8 +184,9 @@ export function useFinancialData() {
       });
 
       for (const row of allRows) {
-        const month = MONTHS.includes(row.mes) ? row.mes : getMonthFromDate(row.data);
-        const ano = row.ano ?? getYearFromDate(row.data);
+        const period = getPeriodFromDate(row.data);
+        const month = period?.month;
+        const ano = period?.ano;
 
         if (!month) continue;
 

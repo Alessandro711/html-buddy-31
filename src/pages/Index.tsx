@@ -157,9 +157,15 @@ const Index = () => {
   // Year derived from the start date — used to anchor the full-year charts
   const chartYear = startYear;
 
-  // RevenueChart & CashFlowChart always show Jan→Dez of chartYear
-  const yearRevenue  = useMemo(() => revenue,  [revenue]);
-  const yearCashFlow = useMemo(() => cashFlow, [cashFlow]);
+  // RevenueChart & CashFlowChart show only the selected period (filtered by month/year)
+  const yearRevenue  = useMemo(
+    () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano ?? CURRENT_YEAR}-${r.month}`)),
+    [revenue, filteredMonthKeys]
+  );
+  const yearCashFlow = useMemo(
+    () => cashFlow.filter(c => filteredMonthKeys.includes(`${c.ano ?? CURRENT_YEAR}-${c.month}`)),
+    [cashFlow, filteredMonthKeys]
+  );
 
   // Filtered subsets for KPIs / DRE / pie charts
   const filteredRevenue = useMemo(
@@ -323,8 +329,8 @@ const Index = () => {
         </div>
         )}
 
-        {/* ── Gráfico Faturamento — sempre Jan→Dez do ano ───────────────────── */}
-        <RevenueChart data={yearRevenue} periodLabel={yearLabel} />
+        {/* ── Gráfico Faturamento — período filtrado ───────────────────── */}
+        <RevenueChart data={yearRevenue} periodLabel={periodLabel} />
 
         {/* ── Composição de despesas + Receita por serviço (filtro de data) ─── */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -332,8 +338,8 @@ const Index = () => {
           <ServiceRevenueChart data={filteredServiceRevenue}  periodLabel={periodLabel} />
         </div>
 
-        {/* ── Fluxo de caixa — sempre Jan→Dez do ano ───────────────────────── */}
-        <CashFlowChart data={yearCashFlow} periodLabel={yearLabel} />
+        {/* ── Fluxo de caixa — período filtrado ───────────────────────── */}
+        <CashFlowChart data={yearCashFlow} periodLabel={periodLabel} />
 
         {/* ── DRE (filtro de data) ──────────────────────────────────────────── */}
         <DRETable data={filteredDre} periodLabel={periodLabel} />

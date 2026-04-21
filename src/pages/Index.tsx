@@ -329,8 +329,8 @@ const Index = () => {
         </div>
         )}
 
-        {/* ── Gráfico Faturamento — sempre Jan→Dez do ano ───────────────────── */}
-        <RevenueChart data={yearRevenue} periodLabel={yearLabel} />
+        {/* ── Gráfico Faturamento — período filtrado ───────────────────── */}
+        <RevenueChart data={yearRevenue} periodLabel={periodLabel} />
 
         {/* ── Composição de despesas + Receita por serviço (filtro de data) ─── */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -338,8 +338,8 @@ const Index = () => {
           <ServiceRevenueChart data={filteredServiceRevenue}  periodLabel={periodLabel} />
         </div>
 
-        {/* ── Fluxo de caixa — sempre Jan→Dez do ano ───────────────────────── */}
-        <CashFlowChart data={yearCashFlow} periodLabel={yearLabel} />
+        {/* ── Fluxo de caixa — período filtrado ───────────────────────── */}
+        <CashFlowChart data={yearCashFlow} periodLabel={periodLabel} />
 
         {/* ── DRE (filtro de data) ──────────────────────────────────────────── */}
         <DRETable data={filteredDre} periodLabel={periodLabel} />

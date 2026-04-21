@@ -157,9 +157,15 @@ const Index = () => {
   // Year derived from the start date — used to anchor the full-year charts
   const chartYear = startYear;
 
-  // RevenueChart & CashFlowChart always show Jan→Dez of chartYear
-  const yearRevenue  = useMemo(() => revenue,  [revenue]);
-  const yearCashFlow = useMemo(() => cashFlow, [cashFlow]);
+  // RevenueChart & CashFlowChart show only the selected period (filtered by month/year)
+  const yearRevenue  = useMemo(
+    () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano ?? CURRENT_YEAR}-${r.month}`)),
+    [revenue, filteredMonthKeys]
+  );
+  const yearCashFlow = useMemo(
+    () => cashFlow.filter(c => filteredMonthKeys.includes(`${c.ano ?? CURRENT_YEAR}-${c.month}`)),
+    [cashFlow, filteredMonthKeys]
+  );
 
   // Filtered subsets for KPIs / DRE / pie charts
   const filteredRevenue = useMemo(

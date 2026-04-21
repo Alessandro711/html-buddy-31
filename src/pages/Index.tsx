@@ -80,17 +80,27 @@ function DateRangeFilter({
 const Index = () => {
   const { revenue, expenses, services, cashFlow, operational, dateBounds, loading, refetch } = useFinancialData();
 
+  const getPeriodKeyFromDate = (date?: string) => {
+    if (!date) return null;
+    const [year, month] = String(date).split("T")[0].split("-");
+    const monthIdx = Number(month) - 1;
+
+    if (!year || monthIdx < 0 || monthIdx > 11) return null;
+
+    return `${Number(year)}-${ALL_MONTHS[monthIdx]}`;
+  };
+
   // ── Fetch pendentes para inadimplência real ───────────────────────────────
-  const [pendentes, setPendentes] = useState<{mes:string; ano:number; valor:number}[]>([]);
+  const [pendentes, setPendentes] = useState<{data:string; valor:number}[]>([]);
   useEffect(() => {
     import("@/integrations/supabase/client").then(({supabase}) => {
       supabase
         .from("lancamentos")
-        .select("mes,ano,valor")
+        .select("data,valor")
         .eq("tipo","receita")
         .eq("status","pendente")
         .then(({data}) => {
-          if (data) setPendentes(data as {mes:string;ano:number;valor:number}[]);
+          if (data) setPendentes(data as {data:string;valor:number}[]);
         });
     });
   }, [refetch]);
@@ -101,7 +111,7 @@ const Index = () => {
   const [endMonthIdx, setEndMonthIdx]     = useState(11);
   const [endYear, setEndYear]             = useState(CURRENT_YEAR);
 
-  // Available years — derived from actual data (revenue + expenses), not just lancamentos
+  // Available years — derived from actual data range loaded from the database
   const availableYears = useMemo(() => {
     const yearsSet = new Set<number>();
     revenue.forEach(r => yearsSet.add(r.ano));
@@ -119,7 +129,6 @@ const Index = () => {
       if (allYears.length > 0) {
         const minY = allYears[0];
         const maxY = allYears[allYears.length - 1];
-        // Find min/max month for those years
         const minMonths = revenue.filter(r=>r.ano===minY).map(r=>ALL_MONTHS.indexOf(r.month)).filter(i=>i>=0);
         const maxMonths = revenue.filter(r=>r.ano===maxY).map(r=>ALL_MONTHS.indexOf(r.month)).filter(i=>i>=0);
         setStartYear(minY);
@@ -135,7 +144,6 @@ const Index = () => {
     }
   }, [revenue, expenses, dateBounds.minDate, dateBounds.maxDate]);
 
-  // filteredMonthKeys: "YYYY-Mon" strings covering the full selected date range
   const filteredMonthKeys = useMemo(() => {
     const keys: string[] = [];
     let y = startYear, m = startMonthIdx;
@@ -148,28 +156,24 @@ const Index = () => {
     return keys;
   }, [startMonthIdx, endMonthIdx, startYear, endYear]);
 
-  // filteredMonths kept for helpers that only need month name
   const filteredMonths = useMemo(() =>
     [...new Set(filteredMonthKeys.map(k => k.split("-")[1]))],
     [filteredMonthKeys]
   );
 
-  // Year derived from the start date — used to anchor the full-year charts
   const chartYear = startYear;
 
-  // RevenueChart & CashFlowChart show only the selected period (filtered by month/year)
   const yearRevenue  = useMemo(
-    () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano ?? CURRENT_YEAR}-${r.month}`)),
+    () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano}-${r.month}`)),
     [revenue, filteredMonthKeys]
   );
   const yearCashFlow = useMemo(
-    () => cashFlow.filter(c => filteredMonthKeys.includes(`${c.ano ?? CURRENT_YEAR}-${c.month}`)),
+    () => cashFlow.filter(c => filteredMonthKeys.includes(`${c.ano}-${c.month}`)),
     [cashFlow, filteredMonthKeys]
   );
 
-  // Filtered subsets for KPIs / DRE / pie charts
   const filteredRevenue = useMemo(
-    () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano ?? CURRENT_YEAR}-${r.month}`)),
+    () => revenue.filter(r => filteredMonthKeys.includes(`${r.ano}-${r.month}`)),
     [revenue, filteredMonthKeys]
   );
 
@@ -183,23 +187,20 @@ const Index = () => {
     [services, filteredMonthKeys]
   );
 
-  // Valor total pendente no período filtrado
   const inadimplenciaValor = useMemo(() => {
     return pendentes
       .filter(p => {
-        const key = `${p.ano ?? CURRENT_YEAR}-${p.mes}`;
-        return filteredMonthKeys.includes(key);
+        const key = getPeriodKeyFromDate(p.data);
+        return key ? filteredMonthKeys.includes(key) : false;
       })
       .reduce((s,p) => s + Number(p.valor), 0);
   }, [pendentes, filteredMonthKeys]);
 
-  // % do faturamento total
   const inadimplenciaPercFat = useMemo(() => {
     const fat = filteredRevenue.reduce((s,r) => s + r.faturamento, 0);
     return fat > 0 ? Math.round((inadimplenciaValor / fat) * 1000) / 10 : 0;
   }, [inadimplenciaValor, filteredRevenue]);
 
-  // Desconto total do período filtrado (vem de monthly_revenue.desconto_total)
   const descontoTotal = useMemo(() => {
     return filteredRevenue.reduce((s, r) => s + (r.desconto_total || 0), 0);
   }, [filteredRevenue]);

@@ -84,14 +84,22 @@ const emptyOperationalRow = (month: string, ano: number): OperationalRow => ({
 
 const normalizeDate = (value?: string) => (value ? String(value).split("T")[0] : "");
 
-const getMonthFromDate = (date: string) => {
-  const parsed = new Date(`${date}T12:00:00`);
-  return Number.isNaN(parsed.getTime()) ? "" : MONTHS[parsed.getMonth()] ?? "";
-};
+const getPeriodFromDate = (value?: string) => {
+  const normalized = normalizeDate(value);
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
-const getYearFromDate = (date: string) => {
-  const parsed = new Date(`${date}T12:00:00`);
-  return Number.isNaN(parsed.getTime()) ? new Date().getFullYear() : parsed.getFullYear();
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+
+  if (!Number.isInteger(year) || monthIndex < 0 || monthIndex > 11) return null;
+
+  return {
+    ano: year,
+    month: MONTHS[monthIndex],
+    normalized,
+  };
 };
 
 const getMonthKey = (ano: number, month: string) => `${ano}-${month}`;
